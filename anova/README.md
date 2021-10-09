@@ -1,4 +1,4 @@
-This folder contains two datasets.
+The two datasets contained in this folder were especifically created for the SMU SOSS R Workshop Series. R Code was adapted from exercises adapted by Huey Woon Lee (hwlee@smu.edu.sg), originally created by Kevin P. McIntyre (kmcintyr@trinity.edu; https://sites.google.com/view/openstatslab/home).
 
 # anova-between.csv
 
