@@ -1,4 +1,8 @@
+# data-cleaning.csv / data-cleaning.sav
+
 This dataset is data "collected" from 100 hypothetical SMU undergraduates.
+
+The .csv and .sav versions of the data are identical apart from file format.
 
 Variables:
   * sex (1 = female, 2 = male)
