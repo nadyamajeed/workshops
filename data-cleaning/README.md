@@ -1,4 +1,4 @@
-This dataset is data "collected" from hypothetical SMU undergraduates.
+This dataset is data "collected" from 100 hypothetical SMU undergraduates.
 
 Variables:
   * sex (1 = female, 2 = male)
