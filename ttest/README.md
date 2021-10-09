@@ -11,7 +11,7 @@ Variables:
 
 # ttest-within.csv
 
-ttest-within.csv is taken from real data collected from 89 undergraduates in Singapore (Study 1 from [Quek et al., 2021](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7911752/)). In a within-subject experiment, undergraduates underwent both a brief mindfulness breathing experimental condition and mind-wandering control condition in a counterbalanced order across two sessions. Self-rated stress was measured after each manipulation.
+ttest-within.csv is taken from real data collected from 82 undergraduates in Singapore (Study 1 from [Quek et al., 2021](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7911752/)). In a within-subject experiment, undergraduates underwent both a brief mindfulness breathing experimental condition and mind-wandering control condition in a counterbalanced order across two sessions. Self-rated stress was measured after each manipulation.
 
 Variables:
   * id (anonymous participant identifier)
