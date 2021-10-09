@@ -1,4 +1,4 @@
-This folder contains two datasets.
+This folder contains two real datasets.
 
 # ttest-between.csv
 
