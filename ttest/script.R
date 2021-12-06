@@ -1,8 +1,13 @@
+# VERSION: 06/12/21 19:24PM
+
 # load libraries
 # indicate versions for reproducibility
 library(dplyr)      # version 1.0.7
+library(tidyr)      # version 1.1.4
+library(psych)      # version 2.1.6
 library(car)        # version 3.0-9
 library(effectsize) # version 0.4.5
+library(ggplot2)    # version 3.3.5
 
 
 
@@ -51,6 +56,41 @@ t_between
 # (choose wisely and report transparently)
 cohens_d(t_between)
 
+#####> visualise independent samples t-test #####
+
+# box plot with scatterplot
+# more info: http://www.sthda.com/english/wiki/ggplot2-box-plot-quick-start-guide-r-software-and-data-visualization
+ggplot(data_between, aes(x = condition, y = taskAnxiety)) +
+  # plot the boxes
+  geom_boxplot() +
+  # plot the points
+  geom_jitter(width = 0.1, size = 0.25) +
+  # fix the axis titles and tick labels
+  ylab("Task anxiety") +
+  xlab("Condition") +
+  scale_x_discrete(breaks = c("control", "threat"), labels = c("Control", "Threat"))
+
+# violin plot
+ggplot(data_between, aes(x = condition, y = taskAnxiety)) +
+  # plot the violins
+  geom_violin() +
+  # fix the axis titles and tick labels
+  ylab("Task anxiety") +
+  xlab("Condition") +
+  scale_x_discrete(breaks = c("control", "threat"), labels = c("Control", "Threat"))
+
+# box and violin plot, with colours
+ggplot(data_between, aes(x = condition, y = taskAnxiety)) +
+  # plot the violins and boxes
+  geom_violin(aes(fill = condition)) +
+  geom_boxplot(width = 0.1) + 
+  # fix the axis titles and tick labels
+  ylab("Task anxiety") +
+  xlab("Condition") +
+  scale_x_discrete(breaks = c("control", "threat"), labels = c("Control", "Threat")) +
+  # remove legend to reduce unnecessary clutter
+  theme(legend.position = "none")
+
 
 
 ########## dependent (aka paired or correlated) samples t-test ##########
@@ -82,3 +122,23 @@ t_within
 # (there are many ways to calculate cohen's d)
 # (choose wisely and report transparently)
 cohens_d(t_within)
+
+#####> visualise dependent samples t-test #####
+
+# box and violin plot, with colours
+# note that data must be in long format
+# currently, it is in wide format
+# we can reshape the data using pivot_longer() from the tidyr package
+# and then pipe the reshaped data into ggplot()
+data_within %>%
+  pivot_longer(cols = c(stress_ctrl, stress_exp)) %>%
+  ggplot(aes(x = name, y = value)) +
+  # plot the violins and boxes
+  geom_violin(aes(fill = name)) +
+  geom_boxplot(width = 0.1) + 
+  # fix the axis titles and tick labels
+  ylab("Stress") +
+  xlab("Condition") +
+  scale_x_discrete(breaks = c("stress_ctrl", "stress_exp"), labels = c("Control", "Mindfulness")) +
+  # remove legend to reduce unnecessary clutter
+  theme(legend.position = "none")
