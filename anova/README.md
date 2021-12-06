@@ -17,4 +17,4 @@ anova-within.csv is taken from real data collected from 62 undergraduates in Sin
 Variables:
   * id (anonymous participant identifier)
   * condition (audio; happy or sad or pink)
-  * stress (self-reported stress; continuous from 1 to 10 where higher values indicate more stress)
+  * stress (self-reported stress; continuous from 1.00 to 10.00 where higher values indicate more stress)
