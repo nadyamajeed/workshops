@@ -1,5 +1,5 @@
 # NADYANNA M. MAJEED (https://github.com/nadyamajeed/workshops)
-# VERSION: 22/06/22 12:59PM
+# VERSION: 22/06/22 3:13PM
 
 
 
@@ -51,17 +51,18 @@ ef.results =
     mimic = "Mplus")
 
 # see results
-summary(
-  ef.results,
-  standardized = TRUE,
-  fit.measures = TRUE)
+ef.results %>%
+  summary(
+    standardized = TRUE,
+    fit.measures = TRUE)
 
 # show plot
-lavaanPlot::lavaanPlot(
-  model = ef.results,
-  node_options = list(shape = "box", fontname = "Helvetica"),
-  edge_options = list(color = "grey"),
-  coefs = TRUE, covs = TRUE, stand = TRUE, stars = TRUE)
+ef.results %>%
+  lavaanPlot::lavaanPlot(
+    model = .,
+    node_options = list(shape = "box", fontname = "Helvetica"),
+    edge_options = list(color = "grey"),
+    coefs = TRUE, covs = TRUE, stand = TRUE, stars = TRUE)
 
 
 
