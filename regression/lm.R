@@ -17,7 +17,7 @@ library(interactions) # version 1.1.5
 
 d =
   # import data
-  haven::read_sav("DD DATA REQUESTS/dawnreg-2023-05.sav") %>%
+  haven::read_sav("https://github.com/nadyamajeed/workshops/raw/main/regression/dawnreg-2023-05.sav") %>%
   # clean data
   dplyr::mutate(
     # reverse age
