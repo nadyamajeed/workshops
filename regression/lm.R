@@ -1,6 +1,6 @@
 ##### START OF CODE #####
 # Nadyanna M. Majeed
-# DawnLab Linear Regression Workshop 2023-05 v1
+# DawnLab Linear Regression Workshop 2023-05 v2
 
 # set working directory
 setwd("...") # change ... to whatever your working directory is
@@ -8,7 +8,7 @@ setwd("...") # change ... to whatever your working directory is
 # R version 3.6.3
 library(haven)        # version 2.4.3
 library(dplyr)        # version 1.0.10
-library(psych)        # verison 2.2.9
+library(psych)        # version 2.2.9
 library(Hmisc)        # version 4.6-0
 library(effectsize)   # version 0.6.0.1
 library(interactions) # version 1.1.5
@@ -118,14 +118,14 @@ interactions::probe_interaction(results3, pred = "D_AGE.c", modx = "D_INCOME.c")
 # for younger people (1 unit below mean):
 # effect of income on optimism is 0.67+(-1)*-0.03 = 0.70
 # for older people (1 unit above mean):
-# effect of income on optimsim is 0.67+(1)*-0.03 = 0.64
+# effect of income on optimism is 0.67+(1)*-0.03 = 0.64
 # conclusion: stronger positive assoc between income & optimism for younger people
 
 interactions::probe_interaction(results3, pred = "D_INCOME.c", modx = "D_AGE.c")
 # "When D_AGE.c is INSIDE the interval [-3.16, 1.33], the slope of D_INCOME.c is p < .05."
 # => for people from age = -3.16 to age = 1.33 (with reference to the mean age),
-# => there is some relationship between age and optimism
+# => there is some relationship between income and optimism
 # => for people younger than -3.16 or older than 1.33,
-# => there is no sig relationship between age and optimism
+# => there is no sig relationship between income and optimism
 
 ##### END OF CODE #####
