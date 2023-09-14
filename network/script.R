@@ -8,7 +8,8 @@ library(dplyr)         # version 1.1.2
 library(psych)         # version 2.3.6
 library(reshape2)      # version 1.4.4
 library(ggplot2)       # version 3.4.2
-library(bootnet)       # version 1.5.4
+library(psychonetrics) # version 0.11
+library(GPArotation)   # version 2023.8-1
 library(qgraph)        # version 1.9.5
 
 ############################## prepare data ##############################
@@ -134,87 +135,157 @@ dplyr::bind_rows(
 
 ############################## network analysis ##############################
 
-# > ESTIMATE OVERALL NETWORK -----
+# establish partial correlation matrix
+model_ggmSaturated = psychonetrics::ggm(
+  covs = dataReactUse %>% cor(method = "spearman"),
+  covtype = "UB",
+  nobs = dataReactUse %>% nrow(),
+  corinput = FALSE, # should be TRUE, but set to FALSE temporarily due to backend issue
+  omega = "full"
+)
 
-# estimate network
-# notes:
-# Estimates an unregularized GGM using the glasso algorithm and stepwise model selection,
-# using the 'ggmModSelect' function from the qgraph package.
-# default tuning is 0 for ggmModSelect
-# default stepwise = TRUE
-result = bootnet::estimateNetwork(dataReactUse, default = "ggmModSelect", corMethod = "spearman")
+# prune spurious correlations (defined via alpha = .01)
+# optimise via modification index (defined via bic)
+model_ggmOptimised = model_ggmSaturated %>%
+  setverbose(TRUE) %>%
+  psychonetrics::prune(alpha = 0.05, recursive = TRUE) %>%
+  psychonetrics::stepup(alpha = 0.05, criterion = "bic")
 
-# plot
-pdf(file = "network_spring.pdf", width = 20, height = 12.5); result %>% plot(
-  negDashed = FALSE,
-  layout = "spring", # can be spring, circle, or groups
-  label.cex = 0.7,
-  label.prop = 0.9,
-  legend.cex = 0.5,
-  legend.mode = "style2",
-  groups = labelsAll$constructs,
-  nodeNames = labelsAll$items); dev.off()
-pdf(file = "network_circle.pdf", width = 20, height = 12.5); result %>% plot(
-  negDashed = FALSE,
-  layout = "circle", # can be spring, circle, or groups
-  label.cex = 0.7,
-  label.prop = 0.9,
-  legend.cex = 0.5,
-  legend.mode = "style2",
-  groups = labelsAll$constructs,
-  nodeNames = labelsAll$items); dev.off()
-pdf(file = "network_groups.pdf", width = 20, height = 12.5); result %>% plot(
-  negDashed = FALSE,
-  layout = "groups", # can be spring, circle, or groups
-  label.cex = 0.7,
-  label.prop = 0.9,
-  legend.cex = 0.5,
-  legend.mode = "style2",
-  groups = labelsAll$constructs,
-  nodeNames = labelsAll$items); dev.off()
-
-# view some info about the fitted model
-result
-
-# get density based on ^
-74 / 351
-
-# bootstrap to get 95% CIs
-# note to self: nBoots = 100, nCores = 3 takes 14m 13s
-result_boot = bootnet::bootnet(
-  result,
-  type = "nonparametric",
-  nBoots = 50, nCores = 4)
-
-# look at width of variation (i.e., 95% CIs)
-pdf("bootstrap_edges.pdf"); result_boot %>% plot(labels = FALSE, order = "sample"); dev.off()
-
-# > ESTIMATE CENTRALITY OF NODES -----
-
-# view centrality plot
-# note to self: understand what each of the 4 are telling us
-result %>% qgraph::centralityPlot(include = "all", orderBy = "ExpectedInfluence")
-
-# bootstrap with case-dropping to get stability of estimates
-# note to self: nBoots = 50, nCore = 4 takes 4m 53s
-result_bootCase = bootnet::bootnet(
-  result,
-  type = "case",
-  statistics = c("strength", "expectedInfluence", "betweenness", "closeness"),
-  nBoots = 50, nCores = 4)
+# examine model fit
+model_ggmOptimised %>% fit()
 
 # plot
-pdf("bootstrap_centrality.pdf"); result_bootCase %>% plot("all"); dev.off()
+pdf(file = "network_spring.pdf", width = 20, height = 12.5); model_ggmOptimised %>%
+  psychonetrics::getmatrix("omega") %>%
+  qgraph::qgraph(
+    layout = "spring",
+    theme = "colorblind",
+    label.cex = 0.7,
+    label.prop = 0.9,
+    legend.cex = 0.5,
+    legend.mode = "style2",
+    labels = colnames(dataReactUse),
+    groups = labelsAll$constructs,
+    nodeNames = labelsAll$items); dev.off()
 
-# get CS coefficient
-# Epskamp et al. (2018) suggest that "CS-coefficient should not be below 0.25, and preferably above 0.5."
-result_bootCase %>% bootnet::corStability()
+############################## cfa/saturated lnm ##############################
+
+# factor loading matrix
+Lambda = matrix(0, 27, 5)
+Lambda[1:3,  1] = 1
+Lambda[4:9,  2] = 1
+Lambda[10:15,3] = 1
+Lambda[16:21,4] = 1
+Lambda[22:27,5] = 1
+
+# create model
+model1_lnm = psychonetrics::lnm(
+  data = dataReactUse,
+  lambda = Lambda, identification = "loadings",
+  vars = colnames(dataReactUse),
+  latents = unique(labelsAll$constructs)) %>%
+  psychonetrics::runmodel()
+
+# inspect fit and parameters
+model1_lnm %>% fit()
+model1_lnm %>% parameters() %>% View()
+
+############################## lrnm 1 ##############################
+
+# create model
+model2_lrnm = psychonetrics::lrnm(
+  data = dataReactUse,
+  lambda = Lambda, identification = "loadings",
+  vars = colnames(dataReactUse),
+  latents = unique(labelsAll$constructs)) %>%
+  psychonetrics::runmodel() %>%
+  psychonetrics::stepup(alpha = 0.01, criterion = "bic", verbose = TRUE)
+
+# inspect fit and parameters
+model2_lrnm %>% fit()
+model2_lrnm %>% parameters() %>% View()
+
+############################## lrnm 2 ##############################
+
+# create model
+model3_lrnm = model2_lrnm %>%
+  psychonetrics::prune(alpha = 0.01, recursive = TRUE, matrices = c("omega_zeta", "omega_epsilon"), verbose = TRUE) %>%
+  psychonetrics::stepup(alpha = 0.01, criterion = "bic", matrices = c("omega_zeta", "omega_epsilon"), verbose = TRUE)
+
+# inspect fit and parameters
+model3_lrnm %>% fit()
+model3_lrnm %>% parameters() %>% View()
+
+############################## plots ##############################
+
+#> write function -----
+
+plot_lnm = function(
+    model, latentNames, observedNames,
+    residSize = 0.3, fade = FALSE, cut = 0,
+    theme = "colorblind", colors = qgraph:::colorblind(length(latentNames)),
+    display = TRUE, filename = NULL, width = 10, height = 10) {
+
+  # get matrices
+  latent_correlations = getmatrix(model, "omega_zeta")
+  factor_loadings = getmatrix(model, "lambda")
+  resid_vcov = getmatrix(model, "sigma_epsilon")
+
+  # get labels
+  groups = lapply(1:ncol(factor_loadings), function(x) which(factor_loadings[,x] != 0))
+  names(groups) = latentNames
+
+  # prepare plot
+  p = qgraph::qgraph.loadings(
+    fact = factor_loadings,
+    model = "reflective",
+    resid = diag(resid_vcov),
+    residSize = residSize,
+    groups = groups,
+    labels = observedNames,
+    factorCors = latent_correlations,
+    fade = fade, cut = cut,
+    theme = theme, colors = colors)
+
+  # fix edges
+  p$Edgelist$bidirectional[p$Edgelist$to > nrow(factor_loadings)] = FALSE
+  p$Edgelist$directed[p$Edgelist$to > nrow(factor_loadings)] = FALSE
+
+  # show plot
+  if(display) plot(p)
+
+  # write plot to pdf
+  if(!is.null(filename)) {
+    pdf(filename, width = width, height = height)
+    plot(p)
+    dev.off()
+  }
+
+  # return qgraph object
+  invisible(p)
+}
+
+#> create plots -----
+
+# cfa/saturated lnm
+plot_lnm(
+  model = model1_lnm,
+  latentNames = unique(labelsAll$constructs),
+  observedNames = colnames(dataReactUse),
+  filename = "plot1_cfa.pdf")
+
+# lrnm (saturated latent network + stepup residual network)
+plot_lnm(
+  model = model2_lrnm,
+  latentNames = unique(labelsAll$constructs),
+  observedNames = colnames(dataReactUse),
+  filename = "plot2_lrnm.pdf")
+
+# lrnm (prune + stepup)
+plot_lnm(
+  model = model3_lrnm,
+  latentNames = unique(labelsAll$constructs),
+  observedNames = colnames(dataReactUse),
+  filename = "plot3_lrnm.pdf")
 
 ############################## end of code ##############################
-
-# to consider
-# MORE IMPT TO RQ:
-# differenceTest (bootnet)
-# predictability? find out how to do in bootnet (or other package)
-# EXPLORATORY:
-# clustering, exploratory graph analysis, check number + stability of clusters
