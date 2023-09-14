@@ -15,12 +15,13 @@ library(qgraph)        # version 1.9.5
 ############################## prepare data ##############################
 
 # read in data and reverse items
-dataReactFull = read.csv("reactivity234_230811.csv") %>%
+dataReactFull = read.csv("reactivity234_230914b.csv") %>%
   dplyr::mutate(
-    across(.cols = c(opt4, opt5, opt6),    .fns = ~ 6 - .x),
+    across(.cols = c(opti4, opti5, opti6),    .fns = ~ 6 - .x),
     across(.cols = c(grat3, grat6),        .fns = ~ 8 - .x),
     across(.cols = c(kind3, kind4),        .fns = ~ 6 - .x),
-    across(.cols = c(forg2, forg4, forg6), .fns = ~ 8 - .x)
+    across(.cols = c(fose2, fose4, fose6), .fns = ~ 8 - .x),
+    across(.cols = c(fosi1, fosi3, fosi5), .fns = ~ 8 - .x)
   )
 
 # prepare data.frame without demographics for later use
@@ -30,38 +31,60 @@ dataReactUse = dataReactFull %>% dplyr::select(-sample, -demAge, -demSexF)
 labelsAll = data.frame(
   constructs = c(
     rep("Reactivity", 3),
-    rep("Optimism", 6),
+    rep("Forgiveness (self)", 6),
+    rep("Forgiveness (situation)", 6),
     rep("Gratitude", 6),
-    rep("Self-kindness", 6),
-    rep("Self-forgiveness", 6)),
+    rep("Kindness to self", 6),
+    rep("Mindfulness", 6),
+    rep("Optimism", 6)
+  ),
   items = c(
+    # reactivity
     "My mood often goes up and down.",
     "[...] tension and turmoil as I think of the day's events.",
     "Minor setbacks sometimes irritate me too much.",
-    "In uncertain times, I usually expect the best.",
-    "I'm always optimistic about my future.",
-    "I expect more good things to happen to me than bad.",
-    "If something can go wrong for me, it will. [R]",
-    "I hardly ever expect things to go my way. [R]",
-    "I rarely count on good things happening to me. [R]",
+    # forgiveness (self)
+    "[...] over time I can give myself some slack.",
+    "I hold grudges against myself for negative things I've done. [R]",
+    "Learning from bad things that I've done helps me get over them.",
+    "It is really hard for me to accept myself once I've messed up. [R]",
+    "With time I am understanding of myself for mistakes I've made.",
+    "I don't stop criticizing myself [...] [R]",
+    # forgiveness (situation),
+    "When things go wrong for reasons that can't be controlled [...] [R]",
+    "With time I can be understanding of bad circumstances in my life.",
+    "If I am disappointed by uncontrollable circumstances [...] [R]",
+    "I eventually make peace with bad situations in my life.",
+    "It’s really hard for me to accept negative situations [...] [R]",
+    "Eventually I let go of negative thoughts [...]",
+    # gratitude
     "I have so much in life to be thankful for.",
     "[...] grateful for, it would be a very long list.",
     "When I look at the world, I don't see much to be grateful for. [R]",
     "I am grateful to a wide variety of people.",
     "[...] more able to appreciate [...] my life history.",
     "Long amounts of time can go by before I feel grateful [...] [R]",
+    # kindness to self
     "[...] patient towards those aspects of my personality I don't like.",
     "[...] give myself the caring and tenderness I need.",
     "[...] judgmental about my own flaws and inadequacies. [R]",
     "[...] impatient towards those aspects of my personality I don't like. [R]",
     "I try to see my failings as part of the human condition.",
     "[...] feelings of inadequacy are shared by most people.",
-    "[...] over time I can give myself some slack.",
-    "I hold grudges against myself for negative things I've done. [R]",
-    "Learning from bad things that I've done helps me get over them.",
-    "It is really hard for me to accept myself once I've messed up. [R]",
-    "With time I am understanding of myself for mistakes I've made.",
-    "I don't stop criticizing myself [...] [R]"
+    # mindfulness
+    "[...] not be conscious of it until some time later. [R]",
+    "I find it difficult to stay focused [...] [R]",
+    "I tend not to notice feelings [...] [R]",
+    "It seems I am 'running on automatic' [...] [R]",
+    "[...] I lose touch with what I'm doing right now [...] [R]",
+    "I find myself preoccupied with the future or the past. [R]",
+    # optimism
+    "In uncertain times, I usually expect the best.",
+    "I'm always optimistic about my future.",
+    "I expect more good things to happen to me than bad.",
+    "If something can go wrong for me, it will. [R]",
+    "I hardly ever expect things to go my way. [R]",
+    "I rarely count on good things happening to me. [R]"
   )
 )
 
@@ -148,8 +171,8 @@ model_ggmSaturated = psychonetrics::ggm(
 # optimise via modification index (defined via bic)
 model_ggmOptimised = model_ggmSaturated %>%
   setverbose(TRUE) %>%
-  psychonetrics::prune(alpha = 0.05, recursive = TRUE) %>%
-  psychonetrics::stepup(alpha = 0.05, criterion = "bic")
+  psychonetrics::prune(alpha = 0.01, recursive = TRUE) %>%
+  psychonetrics::stepup(alpha = 0.01, criterion = "bic")
 
 # examine model fit
 model_ggmOptimised %>% fit()
@@ -168,20 +191,23 @@ pdf(file = "network_spring.pdf", width = 20, height = 12.5); model_ggmOptimised 
     groups = labelsAll$constructs,
     nodeNames = labelsAll$items); dev.off()
 
-############################## cfa/saturated lnm ##############################
+############################## cfa/saturated lnm 1 ##############################
+# theoretical model
+# without any adjustment for negatively-worded items
 
 # factor loading matrix
-Lambda = matrix(0, 27, 5)
-Lambda[1:3,  1] = 1
-Lambda[4:9,  2] = 1
-Lambda[10:15,3] = 1
-Lambda[16:21,4] = 1
-Lambda[22:27,5] = 1
+Lambda1 = matrix(0, 33, 6)
+Lambda1[1:3,  1] = 1
+Lambda1[4:9,  2] = 1
+Lambda1[10:15,3] = 1
+Lambda1[16:21,4] = 1
+Lambda1[22:27,5] = 1
+Lambda1[28:33,6] = 1
 
 # create model
 model1_lnm = psychonetrics::lnm(
   data = dataReactUse,
-  lambda = Lambda, identification = "loadings",
+  lambda = Lambda1, identification = "loadings",
   vars = colnames(dataReactUse),
   latents = unique(labelsAll$constructs)) %>%
   psychonetrics::runmodel()
@@ -189,6 +215,32 @@ model1_lnm = psychonetrics::lnm(
 # inspect fit and parameters
 model1_lnm %>% fit()
 model1_lnm %>% parameters() %>% View()
+
+############################## cfa/saturated lnm 2 ##############################
+# theoretical model
+# plus inclusion of latent factor to capture bias from negatively worded items
+
+# factor loading matrix
+Lambda2 = matrix(0, 33, 7)
+Lambda2[1:3,  1] = 1
+Lambda2[4:9,  2] = 1
+Lambda2[10:15,3] = 1
+Lambda2[16:21,4] = 1
+Lambda2[22:27,5] = 1
+Lambda2[28:33,6] = 1
+Lambda2[c(5,7,9,12,15,18,19,22:27,31:33),7] = 1
+
+# create model
+model2_lnm = psychonetrics::lnm(
+  data = dataReactUse,
+  lambda = Lambda2, identification = "loadings",
+  vars = colnames(dataReactUse),
+  latents = c(unique(labelsAll$constructs), "Negative wording")) %>%
+  psychonetrics::runmodel()
+
+# inspect fit and parameters
+model2_lnm %>% fit()
+model2_lnm %>% parameters() %>% View()
 
 ############################## lrnm 1 ##############################
 
@@ -274,6 +326,12 @@ plot_lnm(
   observedNames = colnames(dataReactUse),
   filename = "plot1_cfa.pdf")
 
+plot_lnm(
+  model = model2_lnm,
+  latentNames = c(unique(labelsAll$constructs), "Negative wording"),
+  observedNames = colnames(dataReactUse),
+  filename = "plot2_cfa.pdf")
+
 # lrnm (saturated latent network + stepup residual network)
 plot_lnm(
   model = model2_lrnm,
@@ -289,3 +347,104 @@ plot_lnm(
   filename = "plot3_lrnm.pdf")
 
 ############################## end of code ##############################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### old code ignore #####
+
+
+
+# > ESTIMATE OVERALL NETWORK -----
+
+# estimate network
+# notes:
+# Estimates an unregularized GGM using the glasso algorithm and stepwise model selection,
+# using the 'ggmModSelect' function from the qgraph package.
+# default tuning is 0 for ggmModSelect
+# default stepwise = TRUE
+result = bootnet::estimateNetwork(dataReactUse, default = "ggmModSelect", corMethod = "spearman")
+
+# plot
+pdf(file = "network_spring.pdf", width = 20, height = 12.5); result %>% plot(
+  negDashed = FALSE,
+  layout = "spring", # can be spring, circle, or groups
+  label.cex = 0.7,
+  label.prop = 0.9,
+  legend.cex = 0.5,
+  legend.mode = "style2",
+  groups = labelsAll$constructs,
+  nodeNames = labelsAll$items); dev.off()
+pdf(file = "network_circle.pdf", width = 20, height = 12.5); result %>% plot(
+  negDashed = FALSE,
+  layout = "circle", # can be spring, circle, or groups
+  label.cex = 0.7,
+  label.prop = 0.9,
+  legend.cex = 0.5,
+  legend.mode = "style2",
+  groups = labelsAll$constructs,
+  nodeNames = labelsAll$items); dev.off()
+pdf(file = "network_groups.pdf", width = 20, height = 12.5); result %>% plot(
+  negDashed = FALSE,
+  layout = "groups", # can be spring, circle, or groups
+  label.cex = 0.7,
+  label.prop = 0.9,
+  legend.cex = 0.5,
+  legend.mode = "style2",
+  groups = labelsAll$constructs,
+  nodeNames = labelsAll$items); dev.off()
+
+# view some info about the fitted model
+result
+
+# get density based on ^
+74 / 351
+
+# bootstrap to get 95% CIs
+# note to self: nBoots = 100, nCores = 3 takes 14m 13s
+result_boot = bootnet::bootnet(
+  result,
+  type = "nonparametric",
+  nBoots = 50, nCores = 4)
+
+# look at width of variation (i.e., 95% CIs)
+pdf("bootstrap_edges.pdf"); result_boot %>% plot(labels = FALSE, order = "sample"); dev.off()
+
+# > ESTIMATE CENTRALITY OF NODES -----
+
+# view centrality plot
+# note to self: understand what each of the 4 are telling us
+result %>% qgraph::centralityPlot(include = "all", orderBy = "ExpectedInfluence")
+
+# bootstrap with case-dropping to get stability of estimates
+# note to self: nBoots = 50, nCore = 4 takes 4m 53s
+result_bootCase = bootnet::bootnet(
+  result,
+  type = "case",
+  statistics = c("strength", "expectedInfluence", "betweenness", "closeness"),
+  nBoots = 50, nCores = 4)
+
+# plot
+pdf("bootstrap_centrality.pdf"); result_bootCase %>% plot("all"); dev.off()
+
+# get CS coefficient
+# Epskamp et al. (2018) suggest that "CS-coefficient should not be below 0.25, and preferably above 0.5."
+result_bootCase %>% bootnet::corStability()
+
+# to consider
+# MORE IMPT TO RQ:
+# differenceTest (bootnet)
+# predictability? find out how to do in bootnet (or other package)
+# EXPLORATORY:
+# clustering, exploratory graph analysis, check number + stability of clusters
