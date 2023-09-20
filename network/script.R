@@ -216,10 +216,14 @@ bootLNM4 = function(runNumber = NULL, prop = 0.75) {
 # run bootstrapping
 Sys.time()
 boots_estimates = parallel::mclapply(1:100, bootLNM4, mc.cores = parallel::detectCores()-1)
-boots_present   = lapply(boots_estimates, function(x) ifelse(x == 0, 0, 1))
 Sys.time()
 
+# write bootstrapped output for future use
+boots_estimates %>% saveRDS("output/boots_estimates.RDS")
+
 # get proportion of times the edge is included
+if(!exists("boots_estimates")) readRDS("output/boots_estimates.RDS")
+boots_present = lapply(boots_estimates, function(x) ifelse(x == 0, 0, 1))
 boots_proportions = purrr::reduce(boots_present, `+`) / length(boots_present)
 
 ############################## summarise all fits and estimates ##############################
@@ -278,7 +282,7 @@ model2_lnm %>% psychonetrics::CIplot(); ggsave("output/plot2_ci.pdf")
 
 plotLNM = function(
     model,
-    which_latents = NULL, latent_network_override = NULL,
+    which_latents = NULL,
     latentNames, observedNames,
     residSize = 0.3, vsize = NULL, fade = FALSE, cut = 0,
     theme = "colorblind", colors = qgraph:::colorblind(length(latentNames)),
@@ -287,7 +291,6 @@ plotLNM = function(
 
   # get matrices
   latent_correlations = psychonetrics::getmatrix(model, "omega_zeta")
-  if(!is.null(latent_network_override)) latent_correlations = latent_network_override
   factor_loadings     = psychonetrics::getmatrix(model, "lambda")
   resid_vcov          = psychonetrics::getmatrix(model, "sigma_epsilon")
   if(!is.null(which_latents)) {
