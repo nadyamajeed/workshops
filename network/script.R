@@ -5,12 +5,16 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # R version 4.3.1
 library(dplyr)         # version 1.1.2
-library(psych)         # version 2.3.6
+library(purrr)         # version 1.0.2
 library(reshape2)      # version 1.4.4
-library(ggplot2)       # version 3.4.2
+library(psych)         # version 2.3.6
 library(psychonetrics) # version 0.11
 library(GPArotation)   # version 2023.8-1
+library(ggplot2)       # version 3.4.2
 library(qgraph)        # version 1.9.5
+
+# custom function to make merges easier
+merge4 = function(a, b, c, d) a %>% merge(b, all = TRUE) %>% merge(c, all = TRUE) %>% merge(d, all = TRUE)
 
 ############################## prepare data ##############################
 
@@ -28,65 +32,7 @@ dataReactFull = read.csv("reactivity234_230914b.csv") %>%
 dataReactUse = dataReactFull %>% dplyr::select(-sample, -demAge, -demSexF)
 
 # prepare labels
-labelsAll = data.frame(
-  constructs = c(
-    rep("Reactivity", 3),
-    rep("Forgiveness (self)", 6),
-    rep("Forgiveness (situation)", 6),
-    rep("Gratitude", 6),
-    rep("Kindness to self", 6),
-    rep("Mindfulness", 6),
-    rep("Optimism", 6)
-  ),
-  items = c(
-    # reactivity
-    "My mood often goes up and down.",
-    "[...] tension and turmoil as I think of the day's events.",
-    "Minor setbacks sometimes irritate me too much.",
-    # forgiveness (self)
-    "[...] over time I can give myself some slack.",
-    "I hold grudges against myself for negative things I've done. [R]",
-    "Learning from bad things that I've done helps me get over them.",
-    "It is really hard for me to accept myself once I've messed up. [R]",
-    "With time I am understanding of myself for mistakes I've made.",
-    "I don't stop criticizing myself [...] [R]",
-    # forgiveness (situation),
-    "When things go wrong for reasons that can't be controlled [...] [R]",
-    "With time I can be understanding of bad circumstances in my life.",
-    "If I am disappointed by uncontrollable circumstances [...] [R]",
-    "I eventually make peace with bad situations in my life.",
-    "It’s really hard for me to accept negative situations [...] [R]",
-    "Eventually I let go of negative thoughts [...]",
-    # gratitude
-    "I have so much in life to be thankful for.",
-    "[...] grateful for, it would be a very long list.",
-    "When I look at the world, I don't see much to be grateful for. [R]",
-    "I am grateful to a wide variety of people.",
-    "[...] more able to appreciate [...] my life history.",
-    "Long amounts of time can go by before I feel grateful [...] [R]",
-    # kindness to self
-    "[...] patient towards those aspects of my personality I don't like.",
-    "[...] give myself the caring and tenderness I need.",
-    "[...] judgmental about my own flaws and inadequacies. [R]",
-    "[...] impatient towards those aspects of my personality I don't like. [R]",
-    "I try to see my failings as part of the human condition.",
-    "[...] feelings of inadequacy are shared by most people.",
-    # mindfulness
-    "[...] not be conscious of it until some time later. [R]",
-    "I find it difficult to stay focused [...] [R]",
-    "I tend not to notice feelings [...] [R]",
-    "It seems I am 'running on automatic' [...] [R]",
-    "[...] I lose touch with what I'm doing right now [...] [R]",
-    "I find myself preoccupied with the future or the past. [R]",
-    # optimism
-    "In uncertain times, I usually expect the best.",
-    "I'm always optimistic about my future.",
-    "I expect more good things to happen to me than bad.",
-    "If something can go wrong for me, it will. [R]",
-    "I hardly ever expect things to go my way. [R]",
-    "I rarely count on good things happening to me. [R]"
-  )
-)
+labelsAll = read.csv("labels.csv")
 
 ############################## descriptives ##############################
 
@@ -96,7 +42,7 @@ dataReactFull %>%
   dplyr::select(n, mean, sd, min, max, skew) %>%
   dplyr::mutate_if(is.numeric, ~ round(.x, 2)) %>%
   dplyr::mutate(skewFlag = ifelse(abs(skew) > 1, "FLAG", "")) %>%
-  write.csv("descriptives.csv", row.names = TRUE)
+  write.csv("output/descriptives.csv", row.names = TRUE)
 
 ############################## distributions ##############################
 
@@ -123,7 +69,7 @@ dataReactUse %>%
     ncol = 6) +
   ggplot2::scale_y_continuous(lim = c(0, nrow(dataReactUse)), breaks = c(0, 250, 500, 750)) +
   ggplot2::scale_x_continuous(breaks = 1:7) +
-  ggplot2::theme_bw(); ggplot2::ggsave(filename = "distributions.pdf", height = 9, width = 11)
+  ggplot2::theme_bw(); ggplot2::ggsave(filename = "output/distributions.pdf", height = 9, width = 11)
 
 ############################## correlation matrices and heatmap ##############################
 
@@ -154,134 +100,200 @@ dplyr::bind_rows(
     axis.text = element_text(size = 8),
     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     axis.title = element_blank()) +
-  ggplot2::facet_wrap(~ type); ggplot2::ggsave(filename = "heatmap.pdf", width = 11, height = 9)
+  ggplot2::facet_wrap(~ type); ggplot2::ggsave(filename = "output/heatmap.pdf", width = 11, height = 9)
 
-############################## network analysis ##############################
-
-# establish partial correlation matrix
-model_ggmSaturated = psychonetrics::ggm(
-  covs = dataReactUse %>% cor(method = "spearman"),
-  covtype = "UB",
-  nobs = dataReactUse %>% nrow(),
-  corinput = FALSE, # should be TRUE, but set to FALSE temporarily due to backend issue
-  omega = "full"
-)
-
-# prune spurious correlations (defined via alpha = .01)
-# optimise via modification index (defined via bic)
-model_ggmOptimised = model_ggmSaturated %>%
-  setverbose(TRUE) %>%
-  psychonetrics::prune(alpha = 0.01, recursive = TRUE) %>%
-  psychonetrics::stepup(alpha = 0.01, criterion = "bic")
-
-# examine model fit
-model_ggmOptimised %>% fit()
-
-# plot
-pdf(file = "network_spring.pdf", width = 20, height = 12.5); model_ggmOptimised %>%
-  psychonetrics::getmatrix("omega") %>%
-  qgraph::qgraph(
-    layout = "spring",
-    theme = "colorblind",
-    label.cex = 0.7,
-    label.prop = 0.9,
-    legend.cex = 0.5,
-    legend.mode = "style2",
-    labels = colnames(dataReactUse),
-    groups = labelsAll$constructs,
-    nodeNames = labelsAll$items); dev.off()
-
-############################## cfa/saturated lnm 1 ##############################
+############################## lnm 1: cfa/saturated ##############################
 # theoretical model
-# without any adjustment for negatively-worded items
+# without any adjustment for item wording
 
 # factor loading matrix
-Lambda1 = matrix(0, 33, 6)
+Lambda1 = matrix(0, 39, 7)
 Lambda1[1:3,  1] = 1
 Lambda1[4:9,  2] = 1
 Lambda1[10:15,3] = 1
 Lambda1[16:21,4] = 1
 Lambda1[22:27,5] = 1
 Lambda1[28:33,6] = 1
+Lambda1[34:39,7] = 1
 
 # create model
 model1_lnm = psychonetrics::lnm(
   data = dataReactUse,
-  lambda = Lambda1, identification = "loadings",
+  identification = "variance", standardize = "z",
+  lambda = Lambda1,
   vars = colnames(dataReactUse),
   latents = unique(labelsAll$constructs)) %>%
   psychonetrics::runmodel()
 
-# inspect fit and parameters
-model1_lnm %>% fit()
-model1_lnm %>% parameters() %>% View()
-
-############################## cfa/saturated lnm 2 ##############################
+############################## lnm 2: cfa/saturated with method factors ##############################
 # theoretical model
-# plus inclusion of latent factor to capture bias from negatively worded items
+# plus inclusion of two extra latent factors
+# to capture bias from negatively & positively worded items
 
 # factor loading matrix
-Lambda2 = matrix(0, 33, 7)
+Lambda2 = matrix(0, 39, 9)
 Lambda2[1:3,  1] = 1
 Lambda2[4:9,  2] = 1
 Lambda2[10:15,3] = 1
 Lambda2[16:21,4] = 1
 Lambda2[22:27,5] = 1
 Lambda2[28:33,6] = 1
-Lambda2[c(5,7,9,12,15,18,19,22:27,31:33),7] = 1
+Lambda2[34:39,7] = 1
+Lambda2[labelsAll$wording=="neg",8] = 1
+Lambda2[labelsAll$wording=="pos",9] = 1
+
+# ensure method factors are not correlated with other factors
+Omega = matrix(0,ncol(Lambda2),ncol(Lambda2))
+Omega[1:7,1:7] = 1
+diag(Omega) = 0
 
 # create model
 model2_lnm = psychonetrics::lnm(
   data = dataReactUse,
-  lambda = Lambda2, identification = "loadings",
+  identification = "variance", standardize = "z",
+  lambda = Lambda2, omega_zeta = Omega,
   vars = colnames(dataReactUse),
-  latents = c(unique(labelsAll$constructs), "Negative wording")) %>%
+  latents = c(unique(labelsAll$constructs), "Negative wording", "Positive wording")) %>%
   psychonetrics::runmodel()
 
-# inspect fit and parameters
-model2_lnm %>% fit()
-model2_lnm %>% parameters() %>% View()
+############################## lnm 3: pruned ##############################
+# theoretical model
+# plus inclusion of two extra latent factors
+# to capture bias from negatively & positively worded items
+# plus model search via prune
 
-############################## lrnm 1 ##############################
+# conduct model search starting from prev model via prune
+model3_lnm = model2_lnm %>%
+  psychonetrics::prune(alpha = 0.01, recursive = TRUE, matrices = c("omega_zeta"), verbose = TRUE)
 
-# create model
-model2_lrnm = psychonetrics::lrnm(
-  data = dataReactUse,
-  lambda = Lambda, identification = "loadings",
-  vars = colnames(dataReactUse),
-  latents = unique(labelsAll$constructs)) %>%
-  psychonetrics::runmodel() %>%
-  psychonetrics::stepup(alpha = 0.01, criterion = "bic", verbose = TRUE)
+############################## lnm 4: stepped up ##############################
+# theoretical model
+# plus inclusion of two extra latent factors
+# to capture bias from negatively & positively worded items
+# plus model search via prune
+# plus model search via stepup
 
-# inspect fit and parameters
-model2_lrnm %>% fit()
-model2_lrnm %>% parameters() %>% View()
+# ensure zeroes in omega (method factors orthogonal to measure factors) are retained in model search
+model3_lnm@parameters$identified[
+  model3_lnm@parameters$matrix == "omega_zeta" &
+    (model3_lnm@parameters$var2_id %in% (8:9) | model3_lnm@parameters$var1_id %in% (8:9))
+] = TRUE
 
-############################## lrnm 2 ##############################
+# conduct model search starting from prev model via stepup
+model4_lnm = model3_lnm %>%
+  psychonetrics::stepup(alpha = 0.01, criterion = "bic", matrices = c("omega_zeta"), verbose = TRUE)
 
-# create model
-model3_lrnm = model2_lrnm %>%
-  psychonetrics::prune(alpha = 0.01, recursive = TRUE, matrices = c("omega_zeta", "omega_epsilon"), verbose = TRUE) %>%
-  psychonetrics::stepup(alpha = 0.01, criterion = "bic", matrices = c("omega_zeta", "omega_epsilon"), verbose = TRUE)
+############################## bootstrap last model for stability check ##############################
 
-# inspect fit and parameters
-model3_lrnm %>% fit()
-model3_lrnm %>% parameters() %>% View()
+bootLNM4 = function(runNumber = NULL, prop = 0.75) {
+  # create model
+  cat("Starting single bootstrap run ", runNumber, " at ", as.character(Sys.time()), "\n", sep = "")
+  model2_lnm_boot = psychonetrics::lnm(
+    data = dataReactUse %>% dplyr::slice_sample(prop = prop),
+    identification = "variance", standardize = "z",
+    lambda = Lambda2, omega_zeta = Omega,
+    vars = colnames(dataReactUse),
+    latents = c(unique(labelsAll$constructs), "Negative wording", "Positive wording")) %>%
+    psychonetrics::runmodel()
+
+  # ensure zeroes in omega (method factors orthogonal to measure factors) are retained in model search
+  model2_lnm_boot@parameters$identified[
+    model2_lnm_boot@parameters$matrix == "omega_zeta" &
+      (model2_lnm_boot@parameters$var2_id %in% (8:9) | model2_lnm_boot@parameters$var1_id %in% (8:9))
+  ] = TRUE
+
+  # conduct model search starting from prev model via stepup
+  model4_lnm_boot = model2_lnm_boot %>%
+    psychonetrics::prune(alpha = 0.01, recursive = TRUE, matrices = c("omega_zeta"), verbose = FALSE) %>%
+    psychonetrics::stepup(alpha = 0.01, criterion = "bic", matrices = c("omega_zeta"), verbose = FALSE)
+
+  # extract edges from latent network
+  omega_zeta_boot = model4_lnm_boot %>% psychonetrics::getmatrix("omega_zeta")
+  cat("Done with single bootstrap run ", runNumber, " at ", as.character(Sys.time()), "\n", sep = "")
+  invisible(omega_zeta_boot)
+}
+
+# run bootstrapping
+Sys.time()
+boots_estimates = parallel::mclapply(1:100, bootLNM4, mc.cores = parallel::detectCores()-1)
+boots_present   = lapply(boots_estimates, function(x) ifelse(x == 0, 0, 1))
+Sys.time()
+
+# get proportion of times the edge is included
+boots_proportions = purrr::reduce(boots_present, `+`) / length(boots_present)
+
+############################## summarise all fits and estimates ##############################
+
+#> fits -----
+
+modelFits = merge4(
+  model1_lnm %>% psychonetrics::fit() %>% dplyr::rename(LNM1 = Value),
+  model2_lnm %>% psychonetrics::fit() %>% dplyr::rename(LNM2 = Value),
+  model3_lnm %>% psychonetrics::fit() %>% dplyr::rename(LNM3 = Value),
+  model4_lnm %>% psychonetrics::fit() %>% dplyr::rename(LNM4 = Value)) %>%
+  dplyr::mutate_if(is.numeric, ~ round(.x, 3)) %>%
+  dplyr::filter(Measure %in% c("chisq", "df", "pvalue", "rmsea", "cfi", "tli", "aic.ll", "bic"))
+
+modelFits %>% write.csv("output/modelfits.csv", row.names = FALSE)
+modelFits %>% print()
+
+#> estimates (latent network and factor loadings) -----
+
+getParameters = function(model, name) {
+  out = model %>% psychonetrics::parameters() %>%
+    dplyr::filter(matrix %in% c("omega_zeta", "lambda")) %>%
+    dplyr::filter(!(matrix == "lambda" & est == 0)) %>%
+    dplyr::select(matrix, var1:var2_id, est, se, p) %>%
+    dplyr::mutate_if(is.numeric, ~round(.x, 4))
+  colnames(out)[c(7:9)] = paste0(colnames(out)[c(7:9)], name)
+  invisible(out)
+}
+
+modelParams = merge4(
+  model1_lnm %>% getParameters("1"),
+  model2_lnm %>% getParameters("2"),
+  model3_lnm %>% getParameters("3"),
+  model4_lnm %>% getParameters("4")) %>%
+  dplyr::arrange(matrix, var2_id, var1_id) %>%
+  dplyr::mutate(est4_inclusion = NA)
+
+for(r in 1:7)
+  for(c in 1:7)
+    if(r != c)
+      modelParams[
+        modelParams$var1_id==r & modelParams$var2_id==c & modelParams$matrix=="omega_zeta",
+        "est4_inclusion"] =
+  boots_proportions[r, c]; rm(r); rm(c)
+
+modelParams %>% write.csv("output/modelparameters.csv", row.names = FALSE)
+modelParams %>% View()
+
+#> look at calculated CI plot for model 2 -----
+
+model2_lnm %>% psychonetrics::CIplot(); ggsave("output/plot2_ci.pdf")
 
 ############################## plots ##############################
 
 #> write function -----
 
-plot_lnm = function(
-    model, latentNames, observedNames,
-    residSize = 0.3, fade = FALSE, cut = 0,
+plotLNM = function(
+    model,
+    which_latents = NULL, latent_network_override = NULL,
+    latentNames, observedNames,
+    residSize = 0.3, vsize = NULL, fade = FALSE, cut = 0,
     theme = "colorblind", colors = qgraph:::colorblind(length(latentNames)),
-    display = TRUE, filename = NULL, width = 10, height = 10) {
+    mar = c(2, 2, 2, 2), title = NULL,
+    display = TRUE, filename = NULL, width = 7.5, height = 7.5) {
 
   # get matrices
-  latent_correlations = getmatrix(model, "omega_zeta")
-  factor_loadings = getmatrix(model, "lambda")
-  resid_vcov = getmatrix(model, "sigma_epsilon")
+  latent_correlations = psychonetrics::getmatrix(model, "omega_zeta")
+  if(!is.null(latent_network_override)) latent_correlations = latent_network_override
+  factor_loadings     = psychonetrics::getmatrix(model, "lambda")
+  resid_vcov          = psychonetrics::getmatrix(model, "sigma_epsilon")
+  if(!is.null(which_latents)) {
+    latent_correlations = latent_correlations[which_latents,which_latents]
+    factor_loadings     = factor_loadings[,which_latents]
+  }
 
   # get labels
   groups = lapply(1:ncol(factor_loadings), function(x) which(factor_loadings[,x] != 0))
@@ -293,11 +305,15 @@ plot_lnm = function(
     model = "reflective",
     resid = diag(resid_vcov),
     residSize = residSize,
+    vsize = vsize,
     groups = groups,
     labels = observedNames,
+    nodeNames = c(groups, observedNames),
     factorCors = latent_correlations,
     fade = fade, cut = cut,
-    theme = theme, colors = colors)
+    theme = theme, colors = colors, mar = mar,
+    title = title,
+    DoNotPlot = TRUE)
 
   # fix edges
   p$Edgelist$bidirectional[p$Edgelist$to > nrow(factor_loadings)] = FALSE
@@ -317,134 +333,76 @@ plot_lnm = function(
   invisible(p)
 }
 
-#> create plots -----
+#> create main plots -----
 
-# cfa/saturated lnm
-plot_lnm(
+# cfa/saturated lnm without method factors
+plot1 = plotLNM(
   model = model1_lnm,
   latentNames = unique(labelsAll$constructs),
   observedNames = colnames(dataReactUse),
-  filename = "plot1_cfa.pdf")
+  vsize = c(3, 10),
+  title = "Saturated Latent Network Model",
+  filename = "output/plot1_lnm.pdf")
 
-plot_lnm(
+# cfa/saturated lnm with method factors
+plot2 = plotLNM(
   model = model2_lnm,
-  latentNames = c(unique(labelsAll$constructs), "Negative wording"),
-  observedNames = colnames(dataReactUse),
-  filename = "plot2_cfa.pdf")
-
-# lrnm (saturated latent network + stepup residual network)
-plot_lnm(
-  model = model2_lrnm,
+  which_latents = c(1:7),
   latentNames = unique(labelsAll$constructs),
   observedNames = colnames(dataReactUse),
-  filename = "plot2_lrnm.pdf")
+  vsize = c(3, 10),
+  title = "Saturated Latent Network Model\n(adjusted for methods factors, not shown)",
+  filename = "output/plot2_lnm.pdf")
 
-# lrnm (prune + stepup)
-plot_lnm(
-  model = model3_lrnm,
+# cfa/saturated lnm with method factors and prune
+plot3 = plotLNM(
+  model = model3_lnm,
+  which_latents = c(1:7),
   latentNames = unique(labelsAll$constructs),
   observedNames = colnames(dataReactUse),
-  filename = "plot3_lrnm.pdf")
+  vsize = c(3, 10),
+  title = "Latent Network Model\n(adjusted for methods factors, not shown)\nafter model search (prune only)",
+  filename = "output/plot3_lnm.pdf")
+
+# cfa/saturated lnm with method factors and prune and stepup
+plot4 = plotLNM(
+  model = model4_lnm,
+  which_latents = c(1:7),
+  latentNames = unique(labelsAll$constructs),
+  observedNames = colnames(dataReactUse),
+  vsize = c(3, 10),
+  title = "Latent Network Model\n(adjusted for methods factors, not shown)\nafter model search (prune + stepup)",
+  filename = "output/plot4_lnm.pdf")
+
+# write one combined plot
+pdf("output/plots.pdf", width = 7.5*2, height = 7.5*2)
+par(mfrow=c(2, 2))
+plot(plot1); plot(plot2); plot(plot3); plot(plot4)
+dev.off()
+
+#> create bootstrap comparison plots -----
+
+pdf("output/plotsboot.pdf", width = 7.5*2, height = 7.5)
+par(mfrow=c(1, 2))
+
+# cfa/saturated lnm with method factors and prune and stepup BOOTSTRAPPED
+psychonetrics::getmatrix(model4_lnm, "omega_zeta")[1:7,1:7] %>%
+  qgraph::qgraph(
+    layout = "circle",
+    labels = unique(labelsAll$constructs),
+    edge.color = "black",
+    edge.labels = TRUE, edge.label.margin = 0.025,
+    title = "Latent network structure from full data\n(Edge weights represent magnitudes)")
+
+boots_proportions[1:7,1:7] %>%
+  qgraph::qgraph(
+    layout = "circle",
+    labels = unique(labelsAll$constructs),
+    edge.color = "black",
+    edge.labels = TRUE,
+    probabilityEdges = TRUE, edge.label.margin = 0.025,
+    title = "Latent network structure from 100 bootstrapped samples\n(Edge weights represent proportions)")
+
+dev.off()
 
 ############################## end of code ##############################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##### old code ignore #####
-
-
-
-# > ESTIMATE OVERALL NETWORK -----
-
-# estimate network
-# notes:
-# Estimates an unregularized GGM using the glasso algorithm and stepwise model selection,
-# using the 'ggmModSelect' function from the qgraph package.
-# default tuning is 0 for ggmModSelect
-# default stepwise = TRUE
-result = bootnet::estimateNetwork(dataReactUse, default = "ggmModSelect", corMethod = "spearman")
-
-# plot
-pdf(file = "network_spring.pdf", width = 20, height = 12.5); result %>% plot(
-  negDashed = FALSE,
-  layout = "spring", # can be spring, circle, or groups
-  label.cex = 0.7,
-  label.prop = 0.9,
-  legend.cex = 0.5,
-  legend.mode = "style2",
-  groups = labelsAll$constructs,
-  nodeNames = labelsAll$items); dev.off()
-pdf(file = "network_circle.pdf", width = 20, height = 12.5); result %>% plot(
-  negDashed = FALSE,
-  layout = "circle", # can be spring, circle, or groups
-  label.cex = 0.7,
-  label.prop = 0.9,
-  legend.cex = 0.5,
-  legend.mode = "style2",
-  groups = labelsAll$constructs,
-  nodeNames = labelsAll$items); dev.off()
-pdf(file = "network_groups.pdf", width = 20, height = 12.5); result %>% plot(
-  negDashed = FALSE,
-  layout = "groups", # can be spring, circle, or groups
-  label.cex = 0.7,
-  label.prop = 0.9,
-  legend.cex = 0.5,
-  legend.mode = "style2",
-  groups = labelsAll$constructs,
-  nodeNames = labelsAll$items); dev.off()
-
-# view some info about the fitted model
-result
-
-# get density based on ^
-74 / 351
-
-# bootstrap to get 95% CIs
-# note to self: nBoots = 100, nCores = 3 takes 14m 13s
-result_boot = bootnet::bootnet(
-  result,
-  type = "nonparametric",
-  nBoots = 50, nCores = 4)
-
-# look at width of variation (i.e., 95% CIs)
-pdf("bootstrap_edges.pdf"); result_boot %>% plot(labels = FALSE, order = "sample"); dev.off()
-
-# > ESTIMATE CENTRALITY OF NODES -----
-
-# view centrality plot
-# note to self: understand what each of the 4 are telling us
-result %>% qgraph::centralityPlot(include = "all", orderBy = "ExpectedInfluence")
-
-# bootstrap with case-dropping to get stability of estimates
-# note to self: nBoots = 50, nCore = 4 takes 4m 53s
-result_bootCase = bootnet::bootnet(
-  result,
-  type = "case",
-  statistics = c("strength", "expectedInfluence", "betweenness", "closeness"),
-  nBoots = 50, nCores = 4)
-
-# plot
-pdf("bootstrap_centrality.pdf"); result_bootCase %>% plot("all"); dev.off()
-
-# get CS coefficient
-# Epskamp et al. (2018) suggest that "CS-coefficient should not be below 0.25, and preferably above 0.5."
-result_bootCase %>% bootnet::corStability()
-
-# to consider
-# MORE IMPT TO RQ:
-# differenceTest (bootnet)
-# predictability? find out how to do in bootnet (or other package)
-# EXPLORATORY:
-# clustering, exploratory graph analysis, check number + stability of clusters
