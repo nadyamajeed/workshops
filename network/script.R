@@ -10,8 +10,8 @@ library(reshape2)      # version 1.4.4
 library(psych)         # version 2.3.6
 library(psychonetrics) # version 0.11
 library(GPArotation)   # version 2023.8-1
-library(ggplot2)       # version 3.4.2
 library(qgraph)        # version 1.9.5
+library(ggplot2)       # version 3.4.2
 
 # custom function to make merges easier
 merge4 = function(a, b, c, d) a %>% merge(b, all = TRUE) %>% merge(c, all = TRUE) %>% merge(d, all = TRUE)
@@ -21,7 +21,7 @@ merge4 = function(a, b, c, d) a %>% merge(b, all = TRUE) %>% merge(c, all = TRUE
 # read in data and reverse items
 dataReactFull = read.csv("reactivity234_230914b.csv") %>%
   dplyr::mutate(
-    across(.cols = c(opti4, opti5, opti6),    .fns = ~ 6 - .x),
+    across(.cols = c(opti4, opti5, opti6), .fns = ~ 6 - .x),
     across(.cols = c(grat3, grat6),        .fns = ~ 8 - .x),
     across(.cols = c(kind3, kind4),        .fns = ~ 6 - .x),
     across(.cols = c(fose2, fose4, fose6), .fns = ~ 8 - .x),
@@ -35,6 +35,10 @@ dataReactUse = dataReactFull %>% dplyr::select(-sample, -demAge, -demSexF)
 labelsAll = read.csv("labels.csv")
 
 ############################## descriptives ##############################
+
+dataReactFull %>%
+  dplyr::select(sample) %>%
+  table()
 
 dataReactFull %>%
   psych::describe() %>%
@@ -219,10 +223,10 @@ boots_estimates = parallel::mclapply(1:100, bootLNM4, mc.cores = parallel::detec
 Sys.time()
 
 # write bootstrapped output for future use
-boots_estimates %>% saveRDS("output/boots_estimates.RDS")
+if(exists("boots_estimates")) boots_estimates %>% saveRDS("output/boots_estimates.RDS")
 
 # get proportion of times the edge is included
-if(!exists("boots_estimates")) readRDS("output/boots_estimates.RDS")
+if(!exists("boots_estimates")) boots_estimates = readRDS("output/boots_estimates.RDS")
 boots_present = lapply(boots_estimates, function(x) ifelse(x == 0, 0, 1))
 boots_proportions = purrr::reduce(boots_present, `+`) / length(boots_present)
 
@@ -272,9 +276,26 @@ for(r in 1:7)
 modelParams %>% write.csv("output/modelparameters.csv", row.names = FALSE)
 modelParams %>% View()
 
-#> look at calculated CI plot for model 2 -----
+#> average absolute edge weights related to stress reactivity -----
 
-model2_lnm %>% psychonetrics::CIplot(); ggsave("output/plot2_ci.pdf")
+modelParams %>%
+  dplyr::filter(matrix == "omega_zeta" & var2 == "Reactivity" & !grepl("wording", var1)) %>%
+  dplyr::summarise(AAEW2 = mean(abs(est2)), AAEW3 = mean(abs(est3)), AAEW4 = mean(abs(est4))) %>%
+  dplyr::mutate_if(is.numeric, ~round(.x, 2))
+
+#> predictability -----
+
+getR2 = function(model) {
+  qgraph::centrality(model %>% psychonetrics::getmatrix("omega_zeta"), R2=TRUE)$R2 %>%
+    round(2)
+}
+
+data.frame(
+  node  = unique(labelsAll$constructs)[1:9],
+  pred2 = getR2(model2_lnm),
+  pred3 = getR2(model3_lnm),
+  pred4 = getR2(model4_lnm))[1:7,] %>%
+  write.csv("output/predictability.csv", row.names = FALSE)
 
 ############################## plots ##############################
 
@@ -286,7 +307,7 @@ plotLNM = function(
     latentNames, observedNames,
     residSize = 0.3, vsize = NULL, fade = FALSE, cut = 0,
     theme = "colorblind", colors = qgraph:::colorblind(length(latentNames)),
-    mar = c(2, 2, 2, 2), title = NULL,
+    mar = c(1.75, 1.75, 1.75, 1.75), title = NULL,
     display = TRUE, filename = NULL, width = 7.5, height = 7.5) {
 
   # get matrices
@@ -321,6 +342,24 @@ plotLNM = function(
   # fix edges
   p$Edgelist$bidirectional[p$Edgelist$to > nrow(factor_loadings)] = FALSE
   p$Edgelist$directed[p$Edgelist$to > nrow(factor_loadings)] = FALSE
+
+  # // PIE PART DOESNT WORK //
+  # // SEE ISSUE RAISED AT https://github.com/SachaEpskamp/qgraph/issues/79 //
+  # fix pie for R2
+  nNodes = p$graphAttributes$Graph$nNodes
+  p$plotOptions$drawPies = TRUE
+  p$plotOptions$pieRadius = 1
+  p$graphAttributes$Nodes$pieStart  = rep(0, nNodes)
+  p$graphAttributes$Nodes$pieDarken = rep(0.25, nNodes)
+  p$graphAttributes$Nodes$pieBorder = rep(0.15, nNodes)
+  p$graphAttributes$Nodes$pieColor  = rep(NA, nNodes)
+  p$graphAttributes$Nodes$pieColor2 = rep("white", nNodes)
+  # get predictability (R2)
+  predR2 = qgraph::centrality(latent_correlations, R2 = TRUE)$R2 %>% as.list()
+  predR2 = c(rep(list(NULL), nrow(factor_loadings)), predR2)
+  predR2 = predR2[1:nNodes]
+  p$Arguments$pie = p$graphAttributes$Nodes$pie = predR2
+  # // END OF PIE PART WHICH DOESNT WORK //
 
   # show plot
   if(display) plot(p)
@@ -383,6 +422,18 @@ par(mfrow=c(2, 2))
 plot(plot1); plot(plot2); plot(plot3); plot(plot4)
 dev.off()
 
+#> create CI plot for model 2 -----
+
+model2_lnm_forCIplot = model2_lnm
+model2_lnm_forCIplot@modelmatrices[["fullsample"]][["omega_zeta"]] =
+  model2_lnm_forCIplot@modelmatrices[["fullsample"]][["omega_zeta"]][1:7,1:7]
+model2_lnm_forCIplot@parameters = model2_lnm_forCIplot@parameters %>%
+  dplyr::filter(var1 != "Positive wording" & var1 != "Negative wording")
+
+plot2_ci = model2_lnm_forCIplot %>% psychonetrics::CIplot()
+
+plot(plot2_ci); ggsave("output/plot2_ci.pdf")
+
 #> create bootstrap comparison plots -----
 
 pdf("output/plotsboot.pdf", width = 7.5*2, height = 7.5)
@@ -391,19 +442,21 @@ par(mfrow=c(1, 2))
 # cfa/saturated lnm with method factors and prune and stepup BOOTSTRAPPED
 psychonetrics::getmatrix(model4_lnm, "omega_zeta")[1:7,1:7] %>%
   qgraph::qgraph(
+    input = .,
     layout = "circle",
     labels = unique(labelsAll$constructs),
-    edge.color = "black",
-    edge.labels = TRUE, edge.label.margin = 0.025,
+    edge.labels = TRUE,
+    edge.label.margin = 0,
     title = "Latent network structure from full data\n(Edge weights represent magnitudes)")
 
 boots_proportions[1:7,1:7] %>%
   qgraph::qgraph(
+    input = .,
     layout = "circle",
     labels = unique(labelsAll$constructs),
-    edge.color = "black",
-    edge.labels = TRUE,
-    probabilityEdges = TRUE, edge.label.margin = 0.025,
+    edge.color = "black", probabilityEdges = TRUE,
+    edge.labels = as.matrix(ifelse(abs(.) > 0.25, round(.,2), NA)),
+    edge.label.margin = 0,
     title = "Latent network structure from 100 bootstrapped samples\n(Edge weights represent proportions)")
 
 dev.off()
