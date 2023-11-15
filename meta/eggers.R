@@ -32,7 +32,7 @@ data_g_simple$sei = sqrt(data_g_simple$vi)
 
 # rearranged (Rothstein et al., 2005; doi:10.1002/0470870168):
 # g = slope*SE + intercept
-# weighted by 1/v
+# weighted by 1/SE^2
 
 #> test via lm -----
 # corresponds to original
