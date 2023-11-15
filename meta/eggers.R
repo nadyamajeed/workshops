@@ -6,47 +6,21 @@
 # install.packages("metafor")
 # install.packages("lmerTest")
 
-##### GENERATE SOME DATA #####
-
-# set up some changeable parameters
-no_of_samples = 25
-n_min = 25
-n_max = 100
-ndiff_max = 10
-
-# create single simulated dataset
-# of a meta-analysis of SMDs
-
-# group 1
-n1 = sample(n_min:n_max, size = no_of_samples, replace = TRUE)
-m1 = rnorm(n = no_of_samples, mean = 5, sd = 1) |> round(2)
-sd1 = 
-  (sample((0.5*n_max):(1.25*n_max), size = no_of_samples, replace = TRUE) /
-     n1 ) |> 
-  round(2)
-
-# group 2
-n2 = n1 + sample(-ndiff_max:ndiff_max, size = no_of_samples, replace = TRUE)
-m2 = m1 - rnorm(n = no_of_samples, mean = 4, sd = 0.5) |> round(2)
-sd2 = 
-  (sample((0.5*n_max):(1.25*n_max), size = no_of_samples, replace = TRUE) /
-     n2 ) |> 
-  round(2)
-
-# combine
-data_recorded_A = data.frame(
-  sample = 1:no_of_samples,
-  n1, m1, sd1,
-  n2, m2, sd2
-)
+##### READ IN AND CLEAN DATA #####
 
 # create SMDs (hedge's g)
-data_g_A = metafor::escalc(
-  "SMD", 
+data_g_simple = metafor::escalc(
+  # read in data
+  data = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/main/meta/data_simple_SMD.csv"),
+  # compute effect size and variance
+  measure = "SMD", 
   n1i = n1, m1i = m1, sd1i = sd1,
-  n2i = n2, m2i = m2, sd2i = sd2,
-  data = data_recorded_A
+  n2i = n2, m2i = m2, sd2i = sd2
 )
+
+# compute SE = sqrt(variance)
+# following metafor documentation
+data_g_simple$sei = sqrt(data_g_simple$vi)
 
 ##### CONDUCT EGGER'S REGRESSION TEST #####
 
@@ -65,8 +39,8 @@ data_g_A = metafor::escalc(
 
 lm(
   # g weighted by SE is predicted by intercept and inverse SE
-  I(yi/sqrt(vi)) ~ 1 + I(1/sqrt(vi)),
-  data = data_g_A
+  I(yi/sei) ~ 1 + I(1/sei),
+  data = data_g_simple
 ) |> 
   # estimate of interest is the intercept
   summary()
@@ -78,10 +52,10 @@ metafor::rma(
   # indicate g and variance
   yi = yi, vi = vi,
   # indicate moderator which is SE
-  mods = ~ I(sqrt(vi)),
+  mods = ~ sei,
   # indicate weight which is inverse SE^2
-  weights = 1/vi,
-  data = data_g_A
+  weights = 1/sei^2,
+  data = data_g_simple
 ) |>
   # estimate of interest is the slope
   summary()
@@ -94,16 +68,16 @@ metafor::rma(
 # as SMD and SE are not independent
 
 # hence, use corrected formula for SE
-# SE_corrected = sqrt((n1+n2)/(n1*n2))
+# SE corrected = sqrt((n1+n2)/(n1*n2))
 
-data_g_A$SE_corrected = with(data_g_A, sqrt((n1+n2)/(n1*n2)))
+data_g_simple$sei_corrected = with(data_g_simple, sqrt((n1+n2)/(n1*n2)))
 
 #> test via lm -----
 
 lm(
   # g weighted by SE is predicted by intercept and inverse SE
-  I(yi/SE_corrected) ~ 1 + I(1/SE_corrected),
-  data = data_g_A
+  I(yi/sei_corrected) ~ 1 + I(1/sei_corrected),
+  data = data_g_simple
 ) |> 
   # estimate of interest is the intercept
   summary()
@@ -114,51 +88,40 @@ metafor::rma(
   # indicate g and variance
   yi = yi, vi = vi,
   # indicate moderator which is SE
-  mods = ~ I(SE_corrected),
+  mods = ~ sei_corrected,
   # indicate weight which is inverse SE^2
-  weights = 1/SE_corrected^2,
-  data = data_g_A
+  weights = 1/sei_corrected^2,
+  data = data_g_simple
 ) |>
   # estimate of interest is the slope
   summary()
 
 ##### EXTENSION TO THREE-LEVEL META-ANALYSIS #####
 
-# create second dataset
-# which is based on (i.e., correlated with) the first
-# this will be our second effect size per sample.
-# for simplicity purposes, let us assume
-# only the means change, and the SDs stay the same.
-
-# duplicate the data
-data_recorded_B = data_recorded_A
-
-# change the means slightly
-data_recorded_B$m1 = (data_recorded_B$m1 + rnorm(no_of_samples)) |> round(2)
-data_recorded_B$m2 = (data_recorded_B$m2 + rnorm(no_of_samples)) |> round(2)
-
-# recompute g and v and corrected SE
-# note that corrected SE will be the same
-# as it is only determined by sample size
-# which is the same as it's drawn from the same sample
-data_g_B = metafor::escalc(
-  "SMD", 
+# create SMDs (hedge's g)
+data_g_multi = metafor::escalc(
+  # read in data
+  data = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/main/meta/data_multi_SMD.csv"),
+  # compute effect size and variance
+  measure = "SMD", 
   n1i = n1, m1i = m1, sd1i = sd1,
-  n2i = n2, m2i = m2, sd2i = sd2,
-  data = data_recorded_B
+  n2i = n2, m2i = m2, sd2i = sd2
 )
-data_g_B$SE_corrected = with(data_g_B, sqrt((n1+n2)/(n1*n2)))
 
-# combine the data
-data_g_all = rbind(data_g_A, data_g_B)
+# compute SE = sqrt(variance)
+# following metafor documentation
+data_g_multi$sei = sqrt(data_g_multi$vi)
+
+# compute corrected SE
+data_g_multi$sei_corrected = with(data_g_multi, sqrt((n1+n2)/(n1*n2)))
 
 #> test via lmer -----
 
 lmerTest::lmer(
   # g weighted by SE is predicted by intercept and inverse SE
   # with random intercept by sample
-  I(yi/SE_corrected) ~ 1 + I(1/SE_corrected) + (1 | sample),
-  data = data_g_all
+  I(yi/sei_corrected) ~ 1 + I(1/sei_corrected) + (1 | sample),
+  data = data_g_multi
 ) |> 
   # estimate of interest is the intercept
   summary(correlation = FALSE)
