@@ -1,7 +1,5 @@
 ##### SET UP -----
 
-library(dplyr)
-
 # set up custom helper function
 # to convert SDs and correlation
 # into variance-covariance matrix
