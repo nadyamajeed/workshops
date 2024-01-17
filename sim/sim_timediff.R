@@ -37,7 +37,7 @@ library(ggplot2)
 # low error
 ggplot(
   sapply(
-    X = rep(seq(from = 10, to = 1000, by = 5), 5),
+    X = rep(seq(from = 10, to = 1000, by = 5), 10),
     FUN = function(X) simulator(N = X, error_variance = 0.1)) |>
     as.data.frame() |>
     t() |>
@@ -51,7 +51,7 @@ ggplot(
 # medium error
 ggplot(
   sapply(
-    X = rep(seq(from = 10, to = 1000, by = 5), 5),
+    X = rep(seq(from = 10, to = 1000, by = 5), 10),
     FUN = function(X) simulator(N = X, error_variance = 0.5)) |>
     as.data.frame() |>
     t() |>
@@ -65,7 +65,7 @@ ggplot(
 # high error
 ggplot(
   sapply(
-    X = rep(seq(from = 10, to = 1000, by = 5), 5),
+    X = rep(seq(from = 10, to = 1000, by = 5), 10),
     FUN = function(X) simulator(N = X, error_variance = 1)) |>
     as.data.frame() |>
     t() |>
@@ -79,7 +79,7 @@ ggplot(
 # very high error
 ggplot(
   sapply(
-    X = rep(seq(from = 10, to = 1000, by = 5), 5),
+    X = rep(seq(from = 10, to = 1000, by = 5), 10),
     FUN = function(X) simulator(N = X, error_variance = 5)) |>
     as.data.frame() |>
     t() |>
