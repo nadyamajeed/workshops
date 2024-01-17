@@ -75,3 +75,17 @@ ggplot(
   geom_point() +
   geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
   geom_hline(yintercept = 1)
+
+# very high error
+ggplot(
+  sapply(
+    X = rep(seq(from = 10, to = 1000, by = 5), 5),
+    FUN = function(X) simulator(N = X, error_variance = 5)) |>
+    as.data.frame() |>
+    t() |>
+    as.data.frame() |>
+    dplyr::mutate_all(as.numeric), 
+  aes(x = N, y = Mdiff)) +
+  geom_point() +
+  geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
+  geom_hline(yintercept = 1)
