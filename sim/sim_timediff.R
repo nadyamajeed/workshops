@@ -34,7 +34,7 @@ simulator = function(
 
 library(ggplot2)
 
-# low error
+# low error, varying N
 ggplot(
   sapply(
     X = rep(seq(from = 10, to = 1000, by = 5), 10),
@@ -48,7 +48,7 @@ ggplot(
   geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
   geom_hline(yintercept = 1)
 
-# medium error
+# medium error, varying N
 ggplot(
   sapply(
     X = rep(seq(from = 10, to = 1000, by = 5), 10),
@@ -62,7 +62,7 @@ ggplot(
   geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
   geom_hline(yintercept = 1)
 
-# high error
+# high error, varying N
 ggplot(
   sapply(
     X = rep(seq(from = 10, to = 1000, by = 5), 10),
@@ -76,7 +76,7 @@ ggplot(
   geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
   geom_hline(yintercept = 1)
 
-# very high error
+# very high error, varying N
 ggplot(
   sapply(
     X = rep(seq(from = 10, to = 1000, by = 5), 10),
@@ -87,5 +87,19 @@ ggplot(
     dplyr::mutate_all(as.numeric), 
   aes(x = N, y = Mdiff)) +
   geom_point() +
+  geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
+  geom_hline(yintercept = 1)
+
+# fixed N=250, varying error
+ggplot(
+  sapply(
+    X = rep(seq(from = 0.05, to = 3, by = 0.05), 20),
+    FUN = function(X) simulator(N = 250, error_variance = X)) |>
+    as.data.frame() |>
+    t() |>
+    as.data.frame() |>
+    dplyr::mutate_all(as.numeric), 
+  aes(x = error_variance, y = Mdiff)) +
+  geom_jitter() +
   geom_line(stat = "smooth", method = "lm", se = FALSE, colour = "red") +
   geom_hline(yintercept = 1)
