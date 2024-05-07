@@ -23,7 +23,9 @@ demodata =
 
 # create plot for year of meta-analysis
 p1 = ggplot(demodata, aes(x = yearMeta)) +
+  # histogram
   geom_histogram(binwidth = 1) +
+  # fix axes and main plot area
   scale_y_continuous(breaks = 0:40) +
   scale_x_continuous(breaks = 2000:2030) +
   xlab("Year meta-analysis was made available") +
@@ -31,6 +33,7 @@ p1 = ggplot(demodata, aes(x = yearMeta)) +
   theme(
     panel.grid.minor = element_blank(),
     axis.text = element_text(size = 5)) +
+  # add title of plot
   ggtitle("Year of meta-analysis")
 
 # create plot for year of studies
@@ -39,19 +42,22 @@ p2 = ggplot(
     dplyr::arrange(yearStudyMin, yearStudyMax) %>%
     dplyr::mutate(order = row.names(.) %>% as.numeric()),
   aes(y = rev(order))) +
+  # 'caterpillar' style plot
   geom_errorbarh(aes(xmin = yearStudyMin, xmax = yearStudyMax)) +
+  # fix axes and main plot area
   scale_x_continuous(
     breaks = seq(1970, 2000, 5),
     limits = c(1970, 2000),
     minor_breaks = seq(1970, 2000, 1)) +
+  xlab("Year of included studies") +
+  ylab("Each row corresponds\nto one meta-analysis") +
   theme(
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank()
   ) +
-  xlab("Year of included studies") +
-  ylab("Each row corresponds\nto one meta-analysis") +
+  # add title of plot
   ggtitle("Year of studies in meta-analysis")
 
 # create plot for sample size
@@ -59,15 +65,18 @@ p3 = ggplot(
   demodata %>%
     dplyr::mutate(temp = 1),
   aes(y = N, x = temp)) +
+  # violin and box plot
   geom_violin() +
   geom_boxplot(width = 0.1) +
+  # fix axes
+  scale_y_continuous(breaks = function(x) pretty(x, n = 10)) +
   xlab("Density") +
   ylab("Sample size\nin meta-analysis") +
   theme(
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank()
   ) +
-  scale_y_continuous(breaks = function(x) pretty(x, n = 10)) +
+  # add title of plot
   ggtitle("Violin and box plot of\nsample size in meta-analysis")
 
 # create plot for number of studies
@@ -75,33 +84,42 @@ p4 = ggplot(
   demodata %>%
     dplyr::mutate(temp = 1),
   aes(y = k, x = temp)) +
+  # violin and box plot
   geom_violin() +
   geom_boxplot(width = 0.1) +
+  # fix axes
+  scale_y_continuous(breaks = function(x) pretty(x, n = 10)) +
   xlab("Density") +
   ylab("Number of studies\nin meta-analysis") +
   theme(
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank()
   ) +
-  scale_y_continuous(breaks = function(x) pretty(x, n = 10)) +
+  # add title of plot
   ggtitle("Violin and box plot of\nnumber of studies in meta-analysis")
 
 # create plot for breakdown of record types
 p5 = ggplot(demodata, aes(x = recordType)) +
+  # histogram
   geom_histogram(stat = "count") +
+  # fix axes
+  scale_y_continuous(limits = c(0, 40)) +
   xlab("Type of record") +
   ylab("Number of meta-analyses") +
-  ggtitle("Breakdown of record types") +
   theme(axis.text.x = element_text(size = 8)) +
-  scale_y_continuous(limits = c(0, 40))
+  # add title of plot
+  ggtitle("Breakdown of record types")
 
 # create plot for breakdown of other characteristic
 p6 = ggplot(demodata, aes(x = otherCharacteristic)) +
+  # histogram
   geom_histogram(stat = "count") +
+  # fix axes
+  scale_y_continuous(limits = c(0, 40)) +
   xlab("Characteristic") +
   ylab("Number of meta-analyses") +
-  ggtitle("Breakdown of characteristic") +
-  scale_y_continuous(limits = c(0, 40))
+  # add title of plot
+  ggtitle("Breakdown of characteristic")
 
 # combine all into one plot
 ggarrange(
