@@ -64,7 +64,7 @@ metafor::rma(
 # doi:10.1002/jrsm.1332
 
 # using egger's test (unadjusted) on SMDs
-# results to inflated type 1 error
+# results in inflated type 1 error
 # as SMD and SE are not independent
 
 # hence, use corrected formula for SE
