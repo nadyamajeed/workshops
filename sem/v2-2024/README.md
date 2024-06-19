@@ -1,4 +1,4 @@
-Files accompanying the SEM workshop for DawnLab in June 2024.
+Files accompanying the SEM workshop for DawnLab in June 2024. All data is artificial.
 
 - path.R with data1.csv
   - 6 observed variables for path analysis
