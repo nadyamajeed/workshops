@@ -47,7 +47,8 @@ fit1 = lavaan::sem(
 # two-dimensional
 fit2 = lavaan::sem(
   "eta1 =~ i1 + i2 + i3 + i4
-   eta2 =~ i5 + i6 + i7 + i8",
+   eta2 =~ i5 + i6 + i7 + i8
+   eta1 ~~ eta2",
   data = dataFact
 )
 
