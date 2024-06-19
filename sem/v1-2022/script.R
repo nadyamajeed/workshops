@@ -20,7 +20,7 @@ options(scipen = 9999)
 ########## preparation ##########
 
 # read in data
-data_sem = read.csv("https://github.com/nadyamajeed/workshops/raw/main/sem/sem.csv")
+data_sem = read.csv("https://github.com/nadyamajeed/workshops/raw/main/sem/v1-2022/sem.csv")
 
 # briefly inspect the data
 data_sem %>% dplyr::glimpse()
