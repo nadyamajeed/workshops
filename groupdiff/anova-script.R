@@ -24,7 +24,7 @@ options(scipen = 9999)
 #####> import and inspect data #####
 
 # read in data
-data_alertness = read.csv("https://github.com/nadyamajeed/workshops/raw/main/anova/anova-between.csv")
+data_alertness = read.csv("https://github.com/nadyamajeed/workshops/raw/main/groupdiff/anova-between.csv")
 
 # briefly inspect the data
 data_alertness %>% glimpse()
@@ -85,7 +85,7 @@ alertness_by_condition_and_sex %>% PostHocTest(method = "bonferroni")
 #####> import and inspect data #####
 
 # read in data
-data_stress = read.csv("https://github.com/nadyamajeed/workshops/raw/main/anova/anova-within.csv")
+data_stress = read.csv("https://github.com/nadyamajeed/workshops/raw/main/groupdiff/anova-within.csv")
 
 # briefly inspect the data
 data_stress %>% glimpse()
@@ -142,3 +142,7 @@ data_stress %>%
     subtitle = get_test_label(stress_by_condition, detailed = TRUE),
     caption = get_pwc_label(stress_pairwise)
   )
+
+
+
+########## end of code ##########
