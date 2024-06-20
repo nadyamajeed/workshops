@@ -21,7 +21,7 @@ library(ggplot2)    # version 3.3.5
 #####> import and inspect data #####
 
 # read in data
-data_between = read.csv("https://github.com/nadyamajeed/workshops/raw/main/ttest/ttest-between.csv")
+data_between = read.csv("https://github.com/nadyamajeed/workshops/raw/main/groupdiff/ttest-between.csv")
 
 # briefly inspect the data
 data_between %>% glimpse()
@@ -103,7 +103,7 @@ ggplot(data_between, aes(x = condition, y = taskAnxiety)) +
 #####> import and inspect data #####
 
 # read in data
-data_within = read.csv("https://github.com/nadyamajeed/workshops/raw/main/ttest/ttest-within.csv")
+data_within = read.csv("https://github.com/nadyamajeed/workshops/raw/main/groupdiff/ttest-within.csv")
 
 # briefly inspect the data
 data_within %>% glimpse()
@@ -147,3 +147,7 @@ data_within %>%
   scale_x_discrete(breaks = c("stress_ctrl", "stress_exp"), labels = c("Control", "Mindfulness")) +
   # remove legend to reduce unnecessary clutter
   theme(legend.position = "none")
+
+
+
+########## end of code ##########
