@@ -32,7 +32,7 @@ N_days_per_individual = 7
 dataL2 = data.frame(
   ID = 1:N_individuals,
   Xi = rnorm(n = N_individuals, mean = mu_Xi, sd = sigma_Xi),
-  u0i = rnorm(n = N_individuals, mean = mu_Xi, sd = sigma_u0i)
+  u0i = rnorm(n = N_individuals, mean = 0, sd = sigma_u0i)
 ) 
 
 # generate L1 data
