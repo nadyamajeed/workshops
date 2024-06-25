@@ -14,7 +14,7 @@ ndiff_max = 10
 
 # group 1
 n1 = sample(n_min:n_max, size = no_of_samples, replace = TRUE)
-m1 = rnorm(n = no_of_samples, mean = 5, sd = 1) |> round(2)
+m1 = rnorm(n = no_of_samples, mean = 2.5, sd = 1) |> round(2)
 sd1 = 
   (sample((0.5*n_max):(1.25*n_max), size = no_of_samples, replace = TRUE) /
      n1) |> 
@@ -22,7 +22,7 @@ sd1 =
 
 # group 2
 n2 = n1 + sample(-ndiff_max:ndiff_max, size = no_of_samples, replace = TRUE)
-m2 = m1 - rnorm(n = no_of_samples, mean = 4, sd = 0.5) |> round(2)
+m2 = m1 - rnorm(n = no_of_samples, mean = 2, sd = 0.5) |> round(2)
 sd2 = 
   (sample((0.5*n_max):(1.25*n_max), size = no_of_samples, replace = TRUE) /
      n2) |> 
@@ -37,7 +37,7 @@ data_recorded_A = data.frame(
 
 # edit data to include country effect
 data_recorded_A$country = sample(c("A", "A", "B", "C"), size = no_of_samples, replace = TRUE)
-data_recorded_A$m1 = with(data_recorded_A, ifelse(country == "B", m1 + 1, m1))
+data_recorded_A$m1 = with(data_recorded_A, ifelse(country == "B", m1 + 0.5, m1))
 
 ##### GENERATE DATA FOR THREE-LEVEL META-ANALYSIS OF SMD #####
 
