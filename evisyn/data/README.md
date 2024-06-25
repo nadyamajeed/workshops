@@ -1,0 +1,2 @@
+- **data_simple_SMD.csv** and **data_multi_SMD.csv** are artificially created (see **create_data_SMD.R** file)
+- **data_simple_COR.csv** is a subset of a real meta-analytic dataset published by Lua et al. (2023; paper [10.1007/s11031-023-10047-w](https://doi.org/10.1007/s11031-023-10047-w); Researchbox [#800](https://researchbox.org/800))
