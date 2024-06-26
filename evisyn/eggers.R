@@ -24,7 +24,7 @@ data_g_simple$sei = sqrt(data_g_simple$vi)
 
 ##### CONDUCT EGGER'S REGRESSION TEST #####
 
-# two options
+# two equations
 # will give the exact same results
 
 # original (Egger et al., 1997; doi:10.1136/bmj.315.7109.629):
@@ -45,7 +45,19 @@ lm(
   # estimate of interest is the intercept
   summary()
 
-#> test via metafor -----
+#> test via metafor (1) -----
+
+metafor::rma(
+  # indicate model for normal overall effect size
+  yi = yi, vi = vi,
+  data = data_g_simple
+) |>
+  # put into regtest with model = "lm"
+  metafor::regtest(model = "lm") |>
+  # see "Test for Funnel Plot Asymmetry" line in output
+  summary()
+
+#> test via metafor (2) -----
 # corresponds to rearranged
 
 metafor::rma(
@@ -126,8 +138,9 @@ lmerTest::lmer(
   # estimate of interest is the intercept
   summary(correlation = FALSE)
 
-# metafor::rma.mv does not have a weights argument.
+# metafor::rma.mv does not have a weights argument
+# metafor::regtest does not support rma.mv objects.
 # thus for three (or more) level meta,
-# lmerTest::lmer can/should be used instead
+# lmerTest::lmer can/should be used instead.
 
 ##### END OF CODE #####
