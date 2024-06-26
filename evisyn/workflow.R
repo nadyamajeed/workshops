@@ -3,6 +3,7 @@
 # R version 4.4.0
 library(dplyr)   # version 1.1.4
 library(metafor) # version 4.6-0
+library(psych)   # version 2.4.3
 
 ##### IMPORT META-ANALYTIC DATA AND COMPUTE EFFECT SIZES #####
 # in actual case you would probably only have one import
@@ -84,7 +85,9 @@ ovr3 = metafor::rma(
 )
 
 # look at overall results
+# also convert from Fisher's z to Pearson's r
 ovr3 %>% summary()
+ovr3$b %>% psych::fisherz2r()
 ovr3 %>% metafor::forest(order = "obs", header = TRUE)
 
 # examine sensitivity/bias
