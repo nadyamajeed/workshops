@@ -39,13 +39,13 @@ ggplot2::ggplot(dataFact, aes(x = i8)) +
 ##### FACTOR ANALYSIS #####
 
 # unidimensional
-fit1 = lavaan::sem(
+fit1 = lavaan::cfa(
   "eta1 =~ i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8",
   data = dataFact
 )
 
 # two-dimensional
-fit2 = lavaan::sem(
+fit2 = lavaan::cfa(
   "eta1 =~ i1 + i2 + i3 + i4
    eta2 =~ i5 + i6 + i7 + i8
    eta1 ~~ eta2",
