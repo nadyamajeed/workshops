@@ -7,7 +7,7 @@ library(broom.mixed) # 0.2.9.5
 
 # generate some data
 source("https://raw.githubusercontent.com/nadyamajeed/workshops/main/diary/sim_ri_AR1.r")
-rm(list=setdiff(ls(), "dataFull"))
+rm(list = setdiff(ls(), "dataFull"))
 
 # see whether lme4 and nlme can give the same results
 # when handling the AR1 differently?
