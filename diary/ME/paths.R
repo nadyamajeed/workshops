@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 0 (240708)
+# version 0.1 (240708)
 
 # R version 4.4.0
 library(dplyr)  # version 1.1.4
@@ -33,6 +33,26 @@ lme4::lmer(
       LON = rowMeans(across(starts_with("LON"))),
       ANX = rowMeans(across(starts_with("ANX"))),
       RUM = rowMeans(across(starts_with("RUM")))
+    ) %>%
+    dplyr::group_by(PID) %>%
+    dplyr::mutate(
+      ANXb = mean(ANX),
+      ANXw = ANX - ANXb,
+      RUMb = mean(RUM),
+      RUMw = RUM - RUMb
+    ) %>%
+    dplyr::ungroup()
+) %>% summary(correlation = FALSE)
+
+# RUM misspecified?
+
+lme4::lmer(
+  LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
+  data = dataFull %>%
+    dplyr::mutate(
+      LON = rowMeans(across(starts_with("LON"))),
+      ANX = rowMeans(across(starts_with("ANX"))),
+      RUM = rowMeans(across(c(RUM1, ENV1, RUM3)))
     ) %>%
     dplyr::group_by(PID) %>%
     dplyr::mutate(
@@ -101,6 +121,35 @@ lme4::lmer(
     dplyr::ungroup()
 ) %>% summary(correlation = FALSE)
 
+# RUM misspecified?
+
+temp3 = lme4::lmer(
+  value ~ 1 + (1 | PID/DAY),
+  data = dataFull %>%
+    dplyr::select(PID, DAY, RUM1, ENV1, RUM3) %>%
+    tidyr::pivot_longer(c(RUM1, ENV1, RUM3)) %>%
+    dplyr::rename(item = name)
+) %>% coef(); temp3 = temp3$`DAY:PID`; temp3 = temp3 %>%
+  dplyr::mutate(
+    temp = rownames(.),
+    PID = substr(temp, nchar(temp) - 3, nchar(temp)),
+    DAY = substr(temp, 1, 1),
+    temp = NULL) %>%
+  dplyr::rename(RUM = `(Intercept)`)
+
+lme4::lmer(
+  LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
+  data = merge(merge(temp1, temp2), temp3) %>%
+    dplyr::group_by(PID) %>%
+    dplyr::mutate(
+      ANXb = mean(ANX),
+      ANXw = ANX - ANXb,
+      RUMb = mean(RUM),
+      RUMw = RUM - RUMb
+    ) %>%
+    dplyr::ungroup()
+) %>% summary(correlation = FALSE)
+
 ##### 2SPA #####
 
 # to be added
@@ -118,6 +167,27 @@ lavaan::sam(
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
   ANX =~ ANX1 + ANX2 + ANX3
   RUM =~ RUM1 + RUM2 + RUM3
+  LON ~ ANX + RUM
+  ",
+  mm.list = list(LON = "LON", ANX = "ANX", RUM = "RUM"),
+  sam.method = "local",
+  cluster = "PID",
+  data = dataFull
+) %>% summary()
+
+# RUM misspecified?
+
+lavaan::sam(
+  "
+  level: 1
+  LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
+  ANX =~ ANX1 + ANX2 + ANX3
+  RUM =~ RUM1 + ENV1 + RUM3
+  LON ~ ANX + RUM
+  level: 2
+  LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
+  ANX =~ ANX1 + ANX2 + ANX3
+  RUM =~ RUM1 + ENV1 + RUM3
   LON ~ ANX + RUM
   ",
   mm.list = list(LON = "LON", ANX = "ANX", RUM = "RUM"),
@@ -147,6 +217,27 @@ lavaan::sam(
   data = dataFull
 ) %>% summary()
 
+# RUM misspecified?
+
+lavaan::sam(
+  "
+  level: 1
+  LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
+  ANX =~ ANX1 + ANX2 + ANX3
+  RUM =~ RUM1 + ENV1 + RUM3
+  LON ~ ANX + RUM
+  level: 2
+  LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
+  ANX =~ ANX1 + ANX2 + ANX3
+  RUM =~ RUM1 + ENV1 + RUM3
+  LON ~ ANX + RUM
+  ",
+  mm.list = list(LON = "LON", ANX = "ANX", RUM = "RUM"),
+  sam.method = "global",
+  cluster = "PID",
+  data = dataFull
+) %>% summary()
+
 ##### FULL SEM #####
 
 lavaan::sem(
@@ -160,6 +251,25 @@ lavaan::sem(
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
   ANX =~ ANX1 + ANX2 + ANX3
   RUM =~ RUM1 + RUM2 + RUM3
+  LON ~ ANX + RUM
+  ",
+  cluster = "PID",
+  data = dataFull
+) %>% summary()
+
+# RUM misspecified?
+
+lavaan::sem(
+  "
+  level: 1
+  LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
+  ANX =~ ANX1 + ANX2 + ANX3
+  RUM =~ RUM1 + ENV1 + RUM3
+  LON ~ ANX + RUM
+  level: 2
+  LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
+  ANX =~ ANX1 + ANX2 + ANX3
+  RUM =~ RUM1 + ENV1 + RUM3
   LON ~ ANX + RUM
   ",
   cluster = "PID",
