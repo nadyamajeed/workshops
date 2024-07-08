@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 0 (240708)
+# version 0.2 (240708)
 
 # R version 4.4.0
 library(dplyr)       # version 1.1.4
