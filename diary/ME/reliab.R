@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 0 (240701-2013)
+# version 0.1 (240709-2013)
 
 # R version 4.4.0
 library(dplyr)    # version 1.1.4
@@ -10,16 +10,13 @@ library(semTools) # version 0.5-6
 library(lme4)     # version 1.1-35.4 # UPDATE THIS
 library(metafor)  # version 4.4-0
 
-# set working directory to that of script's current location
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-
 ##### SET UP EQUATIONS #####
 
 estimateTau = function(vcovmx) mean(vcovmx[lower.tri(vcovmx)])*ncol(vcovmx)^2 / sum(vcovmx)
 
 ##### READ IN DATA #####
 
-dataFull = read.csv("Diss-240621.csv") %>%
+dataFull = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/main/diary/ME/Diss-240708.csv") %>%
   dplyr::filter(complete.cases(.))
 
 # count N
@@ -33,82 +30,83 @@ dataFull %>%
   dplyr::distinct(PID, ndays, all7) %>%
   psych::describe()
 
-# keep just rumination data for now
+# keep just anx data for now
 
-dataRumi = dataFull %>%
-  dplyr::select(PID, DAY, RUM1:RUM3)
+dataANX = dataFull %>%
+  dplyr::select(PID, DAY, ANX1:ANX3)
 
-dataRumi %>%
+dataANX %>%
   psych::describe()
 
 ##### ESTIMATE // SINGLE-LEVEL APPROACHES #####
 
 #> 1. Aggregate data to remove dependence and calculate (between-cluster) reliability -----
 
-dataRumi %>%
+dataANX %>%
   dplyr::group_by(PID) %>%
   dplyr::mutate(
-    RUM1 = mean(RUM1, na.rm = TRUE),
-    RUM2 = mean(RUM2, na.rm = TRUE),
-    RUM3 = mean(RUM3, na.rm = TRUE)
+    ANX1 = mean(ANX1, na.rm = TRUE),
+    ANX2 = mean(ANX2, na.rm = TRUE),
+    ANX3 = mean(ANX3, na.rm = TRUE)
   ) %>%
   dplyr::ungroup() %>%
-  dplyr::distinct(PID, RUM1, RUM2, RUM3) %>%
-  dplyr::select(RUM1:RUM3) %>%
+  dplyr::distinct(PID, ANX1, ANX2, ANX3) %>%
+  dplyr::select(ANX1:ANX3) %>%
   var() %>%
   estimateTau()
 
 #> 2. Treat all data as independent and calculate "overall" reliability -----
 
-dataRumi %>%
-  dplyr::select(RUM1:RUM3) %>%
+dataANX %>%
+  dplyr::select(ANX1:ANX3) %>%
   var() %>%
   estimateTau()
 
 #> 3. Split the data into independent subsets and calculate reliability per subset -----
 
-dataRumi %>%
+dataANX %>%
   split(.$DAY) %>%
   sapply(
     X = .,
     FUN = function(X) X %>%
-      dplyr::select(RUM1:RUM3) %>%
+      dplyr::select(ANX1:ANX3) %>%
       var() %>%
-      estimateTau())
+      estimateTau()) %>%
+  range()
 
 ##### ESTIMATE // MULTI-LEVEL APPROACHES #####
 
 #> 4. Use semTools's SEM framework to obtain separate between-cluster and within-cluster reliabilities -----
 
 #4a congeneric
-dataRumi %>%
+dataANX %>%
   lavaan::cfa(
     data = .,
     model = "
     level: 1
-    RUM =~ RUM1 + RUM2 + RUM3
+    ANX =~ ANX1 + ANX2 + ANX3
     level: 2
-    RUM =~ RUM1 + RUM2 + RUM3",
+    ANX =~ ANX1 + ANX2 + ANX3",
     cluster = "PID") %>%
   semTools::compRelSEM()
 
 #4b tau-equivalent
-dataRumi %>%
+dataANX %>%
   lavaan::cfa(
     data = .,
     model = "
     level: 1
-    RUM =~ RUM1 + RUM2 + RUM3
+    ANX =~ ANX1 + ANX2 + ANX3
     level: 2
-    RUM =~ RUM1 + RUM2 + RUM3",
+    ANX =~ ANX1 + ANX2 + ANX3",
     cluster = "PID") %>%
   semTools::compRelSEM(tau.eq = TRUE)
 
 #> 5. Use Nezlek's (2017) multilevel approach to obtain separate between-cluster and within-cluster reliabilities -----
 
-temp5 = dataRumi %>%
+temp5 = dataANX %>%
   tidyr::pivot_longer(
-    cols = c(RUM1, RUM2, RUM3)
+    cols = c(ANX1, ANX2, ANX3)
   ) %>%
   dplyr::rename(ITEM = name, RESP = value) %>%
   lme4::lmer(
