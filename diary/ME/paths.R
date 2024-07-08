@@ -1,12 +1,13 @@
 ##### START OF CODE #####
-# version 0.1 (240708)
+# version 0 (240708)
 
 # R version 4.4.0
-library(dplyr)  # version 1.1.4
-library(tidyr)  # version 1.3.1
-library(lme4)   # version 1.1-35.4 # UPDATE THIS
-library(mirt)   # version 1.41
-library(lavaan) # version 0.6-17
+library(dplyr)       # version 1.1.4
+library(tidyr)       # version 1.3.1
+library(lme4)        # version 1.1-35.4 # UPDATE THIS
+library(mirt)        # version 1.41
+library(lavaan)      # version 0.6-17
+library(broom.mixed) # version 0.2.9.4
 
 ##### READ IN DATA #####
 
@@ -26,7 +27,7 @@ dataFull %>%
 
 ##### TRADITIONAL MLM #####
 
-lme4::lmer(
+appr1_nomis = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = dataFull %>%
     dplyr::mutate(
@@ -42,11 +43,11 @@ lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% summary(correlation = FALSE)
+) %>% broom.mixed::tidy()
 
 # RUM misspecified?
 
-lme4::lmer(
+appr1_mis = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = dataFull %>%
     dplyr::mutate(
@@ -62,7 +63,7 @@ lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% summary(correlation = FALSE)
+) %>% broom.mixed::tidy()
 
 ##### TWO-STAGE MLM WITH MEASUREMENT EXTENSION (BASED OFF NEZLEK) #####
 
@@ -108,7 +109,7 @@ temp3 = lme4::lmer(
     temp = NULL) %>%
   dplyr::rename(RUM = `(Intercept)`)
 
-lme4::lmer(
+appr2_nomis = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = merge(merge(temp1, temp2), temp3) %>%
     dplyr::group_by(PID) %>%
@@ -119,7 +120,7 @@ lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% summary(correlation = FALSE)
+) %>% broom.mixed::tidy()
 
 # RUM misspecified?
 
@@ -137,7 +138,7 @@ temp3 = lme4::lmer(
     temp = NULL) %>%
   dplyr::rename(RUM = `(Intercept)`)
 
-lme4::lmer(
+appr2_mis = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = merge(merge(temp1, temp2), temp3) %>%
     dplyr::group_by(PID) %>%
@@ -148,7 +149,7 @@ lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% summary(correlation = FALSE)
+) %>% broom.mixed::tidy()
 
 ##### 2SPA #####
 
@@ -156,7 +157,7 @@ lme4::lmer(
 
 ##### SAM-L #####
 
-lavaan::sam(
+appr4_nomis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -173,11 +174,11 @@ lavaan::sam(
   sam.method = "local",
   cluster = "PID",
   data = dataFull
-) %>% summary()
+) %>% broom.mixed::tidy()
 
 # RUM misspecified?
 
-lavaan::sam(
+appr4_mis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -194,11 +195,11 @@ lavaan::sam(
   sam.method = "local",
   cluster = "PID",
   data = dataFull
-) %>% summary()
+) %>% broom.mixed::tidy()
 
 ##### SAM-G #####
 
-lavaan::sam(
+appr5_nomis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -215,11 +216,11 @@ lavaan::sam(
   sam.method = "global",
   cluster = "PID",
   data = dataFull
-) %>% summary()
+) %>% broom.mixed::tidy()
 
 # RUM misspecified?
 
-lavaan::sam(
+appr5_mis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -236,11 +237,11 @@ lavaan::sam(
   sam.method = "global",
   cluster = "PID",
   data = dataFull
-) %>% summary()
+) %>% broom.mixed::tidy()
 
 ##### FULL SEM #####
 
-lavaan::sem(
+appr6_nomis = lavaan::sem(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -255,11 +256,11 @@ lavaan::sem(
   ",
   cluster = "PID",
   data = dataFull
-) %>% summary()
+) %>% broom.mixed::tidy()
 
 # RUM misspecified?
 
-lavaan::sem(
+appr6_mis = lavaan::sem(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -274,6 +275,6 @@ lavaan::sem(
   ",
   cluster = "PID",
   data = dataFull
-) %>% summary()
+) %>% broom.mixed::tidy()
 
 ##### END OF CODE #####
