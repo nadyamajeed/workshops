@@ -1,13 +1,30 @@
 ##### START OF CODE #####
-# version 0.2 (240708)
+# version 1.0 (240814)
 
 # R version 4.4.0
 library(dplyr)       # version 1.1.4
 library(tidyr)       # version 1.3.1
-library(lme4)        # version 1.1-35.4 # UPDATE THIS
-library(mirt)        # version 1.41
+library(lme4)        # version 1.1-35.4
 library(lavaan)      # version 0.6-17
-library(broom.mixed) # version 0.2.9.4
+library(effectsize)  # version 0.8.9
+library(broom.mixed) # version 0.2.9.5
+
+##### CUSTOM HELPER FUNCTIONS #####
+
+mlm_unstd_and_std = function(lmer_output) {
+  unstd = lmer_output %>% 
+    broom.mixed::tidy()
+  std = lmer_output %>% 
+    effectsize::standardize_parameters(method = "pseudo") %>%
+    as.data.frame() %>%
+    dplyr::rename(
+      term = Parameter,
+      std.estimate = Std_Coefficient,
+      std.cilo = CI_low,
+      std.cihi = CI_high) %>%
+    dplyr::select(-CI)
+  return(merge(unstd, std, all = TRUE))
+}
 
 ##### READ IN DATA #####
 
@@ -43,7 +60,7 @@ appr1_nomis = lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% broom.mixed::tidy()
+) %>% mlm_unstd_and_std()
 
 # RUM misspecified?
 
@@ -63,7 +80,7 @@ appr1_mis = lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% broom.mixed::tidy()
+) %>% mlm_unstd_and_std()
 
 ##### TWO-STAGE MLM WITH MEASUREMENT EXTENSION (BASED OFF NEZLEK) #####
 
@@ -120,7 +137,7 @@ appr2_nomis = lme4::lmer(
       RUMw = RUM - RUMb
     ) %>%
     dplyr::ungroup()
-) %>% broom.mixed::tidy()
+) %>% mlm_unstd_and_std()
 
 # RUM misspecified?
 
@@ -151,13 +168,9 @@ appr2_mis = lme4::lmer(
     dplyr::ungroup()
 ) %>% broom.mixed::tidy()
 
-##### 2SPA #####
-
-# to be added
-
 ##### SAM-L #####
 
-appr4_nomis = lavaan::sam(
+appr3_nomis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -178,7 +191,7 @@ appr4_nomis = lavaan::sam(
 
 # RUM misspecified?
 
-appr4_mis = lavaan::sam(
+appr3_mis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -199,7 +212,7 @@ appr4_mis = lavaan::sam(
 
 ##### SAM-G #####
 
-appr5_nomis = lavaan::sam(
+appr4_nomis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -220,7 +233,7 @@ appr5_nomis = lavaan::sam(
 
 # RUM misspecified?
 
-appr5_mis = lavaan::sam(
+appr4_mis = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -241,7 +254,7 @@ appr5_mis = lavaan::sam(
 
 ##### FULL SEM #####
 
-appr6_nomis = lavaan::sem(
+appr5_nomis = lavaan::sem(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -260,7 +273,7 @@ appr6_nomis = lavaan::sem(
 
 # RUM misspecified?
 
-appr6_mis = lavaan::sem(
+appr5_mis = lavaan::sem(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
