@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 0.2 (240822)
+# version 0.3 (240822)
 
 # R version 4.4.0
 library(dplyr)       # version 1.1.4
@@ -156,7 +156,7 @@ dataFullStd =
   merge(dataFull, dataL2) %>%
   dplyr::group_by(PID) %>%
   dplyr::mutate(
-    LONw.z = as.numeric(scale(LONw)),
+    LONw.z = as.numeric(scale(LON - LONb)),
     ANXw.z = as.numeric(scale(ANXw)),
     RUMw.z = as.numeric(scale(RUMw))
   ) %>%
@@ -176,7 +176,8 @@ lme4::lmer(
 ) %>% broom.mixed::tidy() %>%
   as.data.frame() %>%
   dplyr::select(term, estimate, std.error) %>%
-  dplyr::filter(grepl(".z", term)) 
+  dplyr::filter(grepl(".z", term)) %>%
+  dplyr::arrange(term)
 
 nlme::lme(
   fixed = LON.z ~ 0 + ANXb.z + ANXw.z + RUMb.z + RUMw.z,
@@ -186,7 +187,8 @@ nlme::lme(
 ) %>% broom.mixed::tidy() %>%
   as.data.frame() %>%
   dplyr::select(term, estimate, std.error) %>%
-  dplyr::filter(grepl(".z", term)) 
+  dplyr::filter(grepl(".z", term)) %>%
+  dplyr::arrange(term)
 
 lavaan::sem(
   "
@@ -200,6 +202,7 @@ lavaan::sem(
 ) %>% broom.mixed::tidy() %>%
   dplyr::filter(op == "~") %>%
   as.data.frame() %>%
-  dplyr::select(term, estimate, std.error, std.lv, std.all)
+  dplyr::select(term, estimate, std.error, std.lv, std.all) %>%
+  dplyr::arrange(term)
 
 ##### END OF CODE #####
