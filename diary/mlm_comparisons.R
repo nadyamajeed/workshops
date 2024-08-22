@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 0.1 (240822)
+# version 0.2 (240822)
 
 # R version 4.4.0
 library(dplyr)       # version 1.1.4
@@ -17,14 +17,24 @@ dataFull =
   read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/main/diary/ME/Diss-240708.csv") %>%
   # filter to remove days with missing data
   dplyr::filter(complete.cases(.)) %>%
-  # create mean scores for each construct
+  # obtain daily mean scores for each construct
   dplyr::mutate(
     LON = rowMeans(across(starts_with("LON"))),
     ANX = rowMeans(across(starts_with("ANX"))),
     RUM = rowMeans(across(starts_with("RUM")))
   ) %>%
   # throw out item-level data; not needed for this purpose
-  dplyr::select(PID, DAY, LON, ANX, RUM)
+  dplyr::select(PID, DAY, LON, ANX, RUM) %>%
+  # carry out person-mean centring and reintroduce person means
+  # for predictor variables
+  dplyr::group_by(PID) %>%
+  dplyr::mutate(
+    ANXb = mean(ANX),
+    ANXw = ANX - ANXb,
+    RUMb = mean(RUM),
+    RUMw = RUM - RUMb
+  ) %>%
+  dplyr::ungroup()
 
 ##### DO LME4, NLME, AND LAVAAN GIVE THE SAME RESULTS FOR A SIMPLE MULTILEVEL MODEL? #####
 
@@ -32,15 +42,7 @@ dataFull =
 
 results_lme4_temp_unstd = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
-  data = dataFull %>%
-    dplyr::group_by(PID) %>%
-    dplyr::mutate(
-      ANXb = mean(ANX),
-      ANXw = ANX - ANXb,
-      RUMb = mean(RUM),
-      RUMw = RUM - RUMb
-    ) %>%
-    dplyr::ungroup(),
+  data = dataFull,
   REML = FALSE
 ) 
 
@@ -64,15 +66,7 @@ results_lme4_clean = merge(
 results_nlme_temp_unstd = nlme::lme(
   fixed = LON ~ 1 + ANXb + ANXw + RUMb + RUMw,
   random = ~ 1 | PID,
-  data = dataFull %>%
-    dplyr::group_by(PID) %>%
-    dplyr::mutate(
-      ANXb = mean(ANX),
-      ANXw = ANX - ANXb,
-      RUMb = mean(RUM),
-      RUMw = RUM - RUMb
-    ) %>%
-    dplyr::ungroup(),
+  data = dataFull,
   method = "ML"
 ) 
 
@@ -91,12 +85,7 @@ results_lavaan_temp = lavaan::sem(
   LON ~ ANX + RUM
   ",
   cluster = "PID",
-  data = dataFull %>%
-    dplyr::mutate(
-      LON = rowMeans(across(starts_with("LON"))),
-      ANX = rowMeans(across(starts_with("ANX"))),
-      RUM = rowMeans(across(starts_with("RUM")))
-    )
+  data = dataFull
 ) 
 
 results_lavaan_clean = 
@@ -153,27 +142,22 @@ ggplot(
 dataL2 = 
   dataFull %>%
   dplyr::group_by(PID) %>%
-  dplyr::mutate(
-    LONb = mean(LON),
-    ANXb = mean(ANX), 
-    RUMb = mean(RUM)) %>%
+  dplyr::mutate(LONb = mean(LON)) %>%
   dplyr::ungroup() %>%
   dplyr::distinct(PID, .keep_all = TRUE) %>%
   dplyr::mutate(
     LONb.z = as.numeric(scale(LONb)),
     ANXb.z = as.numeric(scale(ANXb)),
-    RUMb.z = as.numeric(scale(RUMb))) %>%
+    RUMb.z = as.numeric(scale(RUMb))
+  ) %>%
   dplyr::select(PID, LONb, LONb.z, ANXb, ANXb.z, RUMb, RUMb.z)
 
 dataFullStd = 
   merge(dataFull, dataL2) %>%
   dplyr::group_by(PID) %>%
   dplyr::mutate(
-    LONw = LON - LONb,
     LONw.z = as.numeric(scale(LONw)),
-    ANXw = ANX - ANXb,
     ANXw.z = as.numeric(scale(ANXw)),
-    RUMw = RUM - RUMb,
     RUMw.z = as.numeric(scale(RUMw))
   ) %>%
   dplyr::ungroup() %>%
