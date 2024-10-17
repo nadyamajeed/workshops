@@ -1,13 +1,13 @@
 ##### START OF CODE #####
-# version 0.3 (240822)
+# version 0.4 (241017)
 
-# R version 4.4.0
+# R version 4.4.1
 library(dplyr)       # version 1.1.4
 library(lme4)        # version 1.1-35.5
 library(nlme)        # version 3.1-166
-library(lavaan)      # version 0.6-18
+library(lavaan)      # version 0.6-19
 library(effectsize)  # version 0.8.9
-library(broom.mixed) # version 0.2.9.5
+library(broom.mixed) # version 0.2.9.6
 library(ggplot2)     # version 3.5.1
 
 ##### READ IN DATA #####
@@ -193,9 +193,9 @@ nlme::lme(
 lavaan::sem(
   "
   level: 1
-  LON.z ~ ANXw.z + RUMw.z
+  LONw.z ~ ANXw.z + RUMw.z
   level: 2
-  LON.z ~ ANXb.z + RUMb.z
+  LONb.z ~ ANXb.z + RUMb.z
   ",
   cluster = "PID",
   data = dataFullStd
