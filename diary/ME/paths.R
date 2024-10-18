@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 2.0 (241017)
+# version 2.0 (241018)
 
 # R version 4.4.1
 library(dplyr)       # version 1.1.4
@@ -43,7 +43,7 @@ dataFull %>%
 
 ##### TRADITIONAL MLM #####
 
-appr1_nomis = lme4::lmer(
+appr1 = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = dataFull %>%
     dplyr::mutate(
@@ -62,6 +62,7 @@ appr1_nomis = lme4::lmer(
 ) %>% mlm_unstd_and_std()
 
 ##### TWO-STAGE MLM WITH MEASUREMENT EXTENSION (BASED OFF NEZLEK) #####
+## THIS IS NOT WORKING :( - TO FIX ##
 
 temp1 = lme4::lmer(
   value ~ 1 + (1 | PID/DAY),
@@ -105,7 +106,7 @@ temp3 = lme4::lmer(
     temp = NULL) %>%
   dplyr::rename(RUM = `(Intercept)`)
 
-appr2_nomis = lme4::lmer(
+appr2 = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = merge(merge(temp1, temp2), temp3) %>%
     dplyr::group_by(PID) %>%
@@ -120,7 +121,7 @@ appr2_nomis = lme4::lmer(
 
 ##### SAM-L #####
 
-appr3_nomis = lavaan::sam(
+appr3 = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -141,7 +142,7 @@ appr3_nomis = lavaan::sam(
 
 ##### SAM-G #####
 
-appr4_nomis = lavaan::sam(
+appr4 = lavaan::sam(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
@@ -162,7 +163,7 @@ appr4_nomis = lavaan::sam(
 
 ##### FULL SEM #####
 
-appr5_nomis = lavaan::sem(
+appr5 = lavaan::sem(
   "
   level: 1
   LON =~ LON1 + LON2 + LON3 + LON4 + LON5 + LON6
