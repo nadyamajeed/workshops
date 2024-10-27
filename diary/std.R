@@ -1,5 +1,5 @@
 ##### START OF CODE #####
-# version 1.1 (241018)
+# version 1.2 (241027)
 
 # R version 4.4.1
 library(dplyr)       # version 1.1.4
@@ -40,7 +40,7 @@ a = lme4::lmer(
   data = dataFull 
 ) %>% effectsize::standardize_parameters(method = "pseudo") 
 
-# through CWC then separate STD at L2 and L1
+# STD within cluster
 b = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = merge(
@@ -59,7 +59,7 @@ b = lme4::lmer(
 ) %>% broom.mixed::tidy() %>%
   dplyr::filter(effect == "fixed")
 
-# through raw STD then CWC
+# grand STD then CWC
 c = lme4::lmer(
   LON ~ 1 + ANXb + ANXw + RUMb + RUMw + (1 | PID),
   data = dataFull %>%
@@ -95,6 +95,25 @@ d = lavaan::sem(
   )) %>%
   dplyr::select(term, estimate, std.error, std.lv, std.all)
 
+# grand STD
+e = lavaan::sem(
+  "level: 1
+  LON ~ ANX + RUM
+  level: 2
+  LON ~ ANX + RUM",
+  cluster = "PID",
+  data = dataFull %>%
+    dplyr::mutate(across(c(LON, ANX, RUM), ~as.numeric(scale(.x))))
+) %>% broom.mixed::tidy() %>%
+  dplyr::filter(term %in% c("LON ~ ANX", "LON ~ RUM")) %>%
+  dplyr::mutate(term = case_when(
+    term == "LON ~ ANX" & level == 1 ~ "ANXw",
+    term == "LON ~ ANX" & level == 2 ~ "ANXb",
+    term == "LON ~ RUM" & level == 1 ~ "RUMw",
+    term == "LON ~ RUM" & level == 2 ~ "RUMb"
+  )) %>%
+  dplyr::select(term, estimate, std.error, std.lv, std.all)
+
 ##### COMPARISON #####
 
 all = dplyr::bind_rows(
@@ -102,17 +121,17 @@ all = dplyr::bind_rows(
     as.data.frame() %>%
     dplyr::filter(Parameter %in% c("ANXb", "ANXw", "RUMb", "RUMw")) %>%
     dplyr::select(term = Parameter, est = Std_Coefficient) %>%
-    dplyr::mutate(source = "lme4 > effectsize > pseudo") %>%
+    dplyr::mutate(source = "CWC > lme4 > effectsize pseudo") %>%
     dplyr::arrange(term),
   b %>%
     dplyr::filter(term %in% c("ANXb", "ANXw", "RUMb", "RUMw")) %>%
     dplyr::select(term, est = estimate, se = std.error) %>%
-    dplyr::mutate(source = "lme4 > manual > CWC then STD") %>%
+    dplyr::mutate(source = "STD within cluster > lme4") %>%
     dplyr::arrange(term),
   c %>%
     dplyr::filter(term %in% c("ANXb", "ANXw", "RUMb", "RUMw")) %>%
     dplyr::select(term, est = estimate, se = std.error) %>%
-    dplyr::mutate(source = "lme4 > manual > STD then CWC") %>%
+    dplyr::mutate(source = "grand STD then CWC > lme4") %>%
     dplyr::arrange(term),
   d %>%
     dplyr::select(term, est = estimate, se = std.error) %>%
@@ -125,8 +144,26 @@ all = dplyr::bind_rows(
   d %>%
     dplyr::select(term, est = std.all) %>%
     dplyr::mutate(source = "lavaan std.all") %>%
+    dplyr::arrange(term),
+  e %>%
+    dplyr::select(term, est = estimate, se = std.error) %>%
+    dplyr::mutate(source = "grand STD > lavaan est") %>%
+    dplyr::arrange(term),
+  e %>%
+    dplyr::select(term, est = std.lv) %>%
+    dplyr::mutate(source = "grand STD > lavaan std.lv") %>%
+    dplyr::arrange(term),
+  e %>%
+    dplyr::select(term, est = std.all) %>%
+    dplyr::mutate(source = "grand STD > lavaan std.all") %>%
     dplyr::arrange(term)
 ) %>%
+  dplyr::mutate(term = case_when(
+    term == "ANXb" ~ "between ANX",
+    term == "ANXw" ~ "within ANX",
+    term == "RUMb" ~ "between RUM",
+    term == "RUMw" ~ "within RUM"
+  )) %>%
   dplyr::arrange(term)
 
 ggplot(
@@ -136,7 +173,16 @@ ggplot(
   ),
   aes(x = value, y = source)) +
   geom_point() +
-  facet_wrap(~ term + type, nrow = 4) +
+  facet_wrap(~ term + type, scales = "free_x", nrow = 4) +
   theme_bw()
 
 ##### END OF CODE #####
+
+##### START OF NOTES #####
+
+# observations:
+# 1. lavaan std.all always matches grand STD > lavaan std.all
+# 2. std.lv and est from lavaan always match (makes sense bc no latents; not counting between as latents)
+# 3. for WITHIN, grand STD then CWC > lme4 generally matches grand STD > lavaan std.lv/est (but not for between)
+
+##### END OF NOTES #####
