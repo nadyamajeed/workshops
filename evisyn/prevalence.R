@@ -17,7 +17,7 @@ simPrevalenceRaw =
   ) |>
   dplyr::mutate(RECORDED_N = ifelse(RECORDED_N < 50, 50, RECORDED_N)) |>
   dplyr::group_by(id) |>
-  dplyr::mutate(UNSEEN_count = sample(x = 1:RECORDED_N, size = 1)) %>%
+  dplyr::mutate(UNSEEN_count = sample(x = 1:RECORDED_N, size = 1)) |>
   dplyr::ungroup() |>
   dplyr::mutate(RECORDED_prev = round(UNSEEN_count/RECORDED_N * 100, 2)) |>
   dplyr::select(id, RECORDED_prev, RECORDED_N, UNSEEN_count)
