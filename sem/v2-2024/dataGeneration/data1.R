@@ -1,7 +1,7 @@
 ##### START OF CODE #####
 
 # R version 4.4.0
-library(lavaan) # verion 0.6-17
+library(lavaan) # version 0.6-17
 
 # generate data
 set.seed(0)
