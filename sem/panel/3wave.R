@@ -8,21 +8,24 @@ library(lavaanPlot) # version 0.8.1
 # generate artificial data
 set.seed(3); myData = 
   data.frame(
-    PID = 1:1500,
-    common = rnorm(n = 1500, m = 0, sd = sample(seq(0.1, 1, 0.1), 1))
+    PID = 1:2500,
+    common = rnorm(n = 2500, m = 0, sd = 0.75)
   ) %>%
   dplyr::mutate(
-    traitA = 0.2*common + rnorm(n = 1500, m = 0.1, sd = sample(seq(0.1, 1, 0.1), 1)),
-    traitB = 0.2*common + rnorm(n = 1500, m = -0.1, sd = sample(seq(0.1, 1, 0.1), 1)),
-    A_t1 = (0.5*traitA + rnorm(n = 1500, m = -0.1, sd = sample(seq(0.1, 1, 0.1), 1)))*2.5,
-    B_t1 = (0.5*traitB + rnorm(n = 1500, m = -0.1, sd = sample(seq(0.1, 1, 0.1), 1)))*2.5,
-    A_t2 = (0.5*traitA + 0.4*A_t1 + 0.3*B_t1 + rnorm(n = 1500, m = 0.1, sd = sample(seq(0.1, 1, 0.1), 1)))*2.5,
-    B_t2 = (0.5*traitB + 0.6*B_t1 + 0.2*A_t1 + rnorm(n = 1500, m = -0.1, sd = sample(seq(0.1, 1, 0.1), 1)))*2.5,
-    A_t3 = (0.5*traitA + 0.3*A_t2 + 0.4*B_t2 + rnorm(n = 1500, m = 0.1, sd = sample(seq(0.1, 1, 0.1), 1)))*2.5,
-    B_t3 = (0.5*traitB + 0.5*B_t2 + 0.3*A_t2 + rnorm(n = 1500, m = -0.1, sd = sample(seq(0.1, 1, 0.1), 1)))*2.5,
-    common = NULL
+    traitA = common + rnorm(n = 2500, m = 0.1, sd = 0.75),
+    traitB = common + rnorm(n = 2500, m = -0.1, sd = 0.75),
+    A_t1 = (0.3*traitA + rnorm(n = 2500, m = 0.1, sd = 0.75))*2.5,
+    B_t1 = (0.3*traitB + rnorm(n = 2500, m = -0.1, sd = 0.75))*2.5,
+    A_t2 = (0.3*traitA + 0.4*A_t1 + 0.3*B_t1 + rnorm(n = 2500, m = 0.1, sd = 0.75))*2.5,
+    B_t2 = (0.3*traitB + 0.6*B_t1 + 0.2*A_t1 + rnorm(n = 2500, m = -0.1, sd = 0.75))*2.5,
+    A_t3 = (0.3*traitA + 0.3*A_t2 + 0.4*B_t2 + rnorm(n = 2500, m = 0.1, sd = 0.75))*2.5,
+    B_t3 = (0.3*traitB + 0.5*B_t2 + 0.3*A_t2 + rnorm(n = 2500, m = -0.1, sd = 0.75))*2.5,
   ) %>%
-  round()
+  round() %>%
+  dplyr::select(
+    A_t1, A_t2, A_t3,
+    B_t1, B_t2, B_t3
+  )
 
 ##### CLPM #####
 
@@ -143,23 +146,32 @@ riclpm2 = lavaan::lavaan(
   # exogenous covariance
   witA_t1 ~~ witB_t1
   # residual covariance
-  witA_t3 ~~ covab*witB_t3
-  witA_t2 ~~ covab*witB_t2
+  witA_t3 ~~ rescovab*witB_t3
+  witA_t2 ~~ rescovab*witB_t2
   # exogenous variance
   witA_t1 ~~ witA_t1
   witB_t1 ~~ witB_t1
   # residual variance
-  witA_t2 ~~ witA_t2
-  witA_t3 ~~ witA_t3
-  witB_t2 ~~ witB_t2
-  witB_t3 ~~ witB_t3
+  witA_t2 ~~ resvara*witA_t2
+  witA_t3 ~~ resvara*witA_t3
+  witB_t2 ~~ resvarb*witB_t2
+  witB_t3 ~~ resvarb*witB_t3
   ",
   data = myData,
   orthogonal = TRUE
 ) 
 
+# look at which RI-CLPM fits better
+# lower aic & lower bic = better
+sapply(
+  list(riclpm1, riclpm2),
+  function(x) lavaan::fitmeasures(x, c("aic", "bic"))
+) 
+
 # look at plots
 riclpm1 %>%
+  lavaanPlot::lavaanPlot2()
+riclpm2 %>%
   lavaanPlot::lavaanPlot2()
 
 ##### END OF CODE #####
