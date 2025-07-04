@@ -44,34 +44,37 @@ listN = list(
 
 # stage 1 - pooling
 
-fixed_effect = metaSEM::tssem1(
+pooled_fixed = metaSEM::tssem1(
   Cov = listMatrix,
   n = unlist(listN),
   method = "FEM")
-summary(fixed_effect)
+summary(pooled_fixed)
 
-random_effect = metaSEM::tssem1(
+pooled_random = metaSEM::tssem1(
   Cov = listMatrix,
   n = unlist(listN),
   method = "REM")
-summary(random_effect)
+summary(pooled_random)
 
 # stage 2 - analysis
-
-labels = c("time1", "time2", "time3", "time4")
 
 model = metaSEM::lavaan2RAM(
   "time4 ~ time3
   time3 ~ time2
   time2 ~ time1
   time1 ~~ 1*time1",
-  obs.variables = labels)
+  obs.variables = c("time1", "time2", "time3", "time4"))
 
-final_output = metaSEM::tssem2(
-  fixed_effect,
+final_output_fixed = metaSEM::tssem2(
+  pooled_fixed,
   RAM = model
 ) 
+summary(final_output_fixed)
 
-summary(final_output)
+final_output_random = metaSEM::tssem2(
+  pooled_random,
+  RAM = model
+) 
+summary(final_output_random)
 
 ##### END OF CODE #####
