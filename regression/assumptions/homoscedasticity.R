@@ -20,7 +20,7 @@ dataSimAss2 =
       ),
     # low-mid income ppl
     # need to spend most (75-90%) of their income
-    data.frame(id = 1:250) |>
+    data.frame(id = 251:500) |>
       mutate(
         income = sample(
           seq(1001, 2500, 1),
