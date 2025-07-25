@@ -48,11 +48,11 @@ dataSim =
     )
   )
 
+########## CREATE PROFILES ##########
+
 # take only cols that will be used for profile
 dataSim_onlyprofilecols = dataSim %>%
   dplyr::select(depression, anxiety, stress)
-
-########## CREATE PROFILES ##########
 
 # find out how many profiles to create
 profileOutput = mclust::mclustBIC(data = dataSim_onlyprofilecols)
