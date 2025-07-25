@@ -82,6 +82,7 @@ dataSim_withprofiles =
 ########## PLOT - SPAGHETTI ##########
 
 model_3profiles$parameters$mean %>%
+  # change profile means to correct input format
   as.data.frame() %>%
   tibble::rownames_to_column("variable") %>%
   tidyr::pivot_longer(
@@ -89,6 +90,7 @@ model_3profiles$parameters$mean %>%
     names_to = "Profile",
     values_to = "Mean"
   ) %>%
+  # plot
   ggplot(aes(
     x = variable, 
     y = Mean, 
@@ -101,9 +103,11 @@ model_3profiles$parameters$mean %>%
 ########## PLOT - SPIDER ##########
 
 model_3profiles$parameters$mean %>% 
+  # change profile means to correct input format
   t() %>% as.data.frame() %>% 
   dplyr::mutate(profile = c(1, 2, 3)) %>%
   dplyr::select(profile, everything()) %>%
+  # plot
   ggspider()
 
 ########## USE PROFILES TO PREDICT OTHER VAR ##########
