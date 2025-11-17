@@ -60,7 +60,7 @@ sem(
 # 2cii. can also be done using lm
 
 lm(
-  Y~ X + C,
+  Y ~ X + C,
   data = dataSim) |>
   summary() # same results
 
