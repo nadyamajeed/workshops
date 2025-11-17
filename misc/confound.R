@@ -1,17 +1,25 @@
 # START
 
-# 1. simulate data
+# 1. simulate data with X->Y and C being a confound (C->X and C->Y)
 
-N = 10000
+# set sample size
+N = 10000 
 
-beta_XC = 0.5
-beta_YC = 0.5
-beta_YX = 0.5
+# set ref coeffs
+beta_XC = 0.5 # C->X
+beta_YC = 0.5 # C->Y
+beta_YX = 0.5 # X->Y (coeff of interest)
 
-C = rnorm(N)
-X = beta_XC * C + rnorm(N)
-Y = beta_YX * X + beta_YC * C + rnorm(N)
+# generate C (independent)
+C = rnorm(N) 
 
+# generate X (dependent on C)
+X = beta_XC * C + rnorm(N) 
+
+# generate Y (dependent on C and X)
+Y = beta_YX * X + beta_YC * C + rnorm(N) 
+
+# collect all data into single data.frame
 dataSim = data.frame(
   C = C,
   X = X,
@@ -31,7 +39,16 @@ sem(
 ) |>
   summary() # accurate results for X->Y
 
-# 2bi. incorrect model, omits C->X
+# 2b. incorrect model, models C~~X instead of C->X
+
+sem(
+  "Y ~ X + C
+  X ~~ C",
+  data = dataSim
+) |>
+  summary() # accurate results for X->Y
+
+# 2ci. incorrect model, omits C->X
 
 sem(
   "Y ~ X + C",
@@ -40,21 +57,12 @@ sem(
 ) |>
   summary() # accurate results for X->Y
 
-# 2bii. can also be done using lm
+# 2cii. can also be done using lm
 
 lm(
   Y~ X + C,
   data = dataSim) |>
   summary() # same results
-
-# 2c. incorrect model, models C~~X instead of C->X
-
-sem(
-  "Y ~ X + C
-  X ~~ C",
-  data = dataSim
-) |>
-  summary() # accurate results for X->Y
 
 # 2di. incorrect model, omits C entirely
 
