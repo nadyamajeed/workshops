@@ -73,7 +73,7 @@ fakeStudies_processed =
       meta_r_t1_t2
     ),
     v = ((2  * (1 - r_temp)) / n) + (d^2 / (2 * n)),
-    v.annual = v / t_interval,
+    v.annual = v / (t_interval^2),
     r_temp = NULL
   )
 
