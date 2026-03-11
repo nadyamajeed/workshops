@@ -42,6 +42,8 @@ fakeStudies =
     r_t1_t2 = if_else(runif(n()) < 0.20, NA_real_, r_t1_t2)
   )
 
+##### method following description given in Orth et al 2024 10.1037/bul0000436 #####
+
 # before we can process the data,
 # we need to obtain the meta-analytic r_t1_t2
 # so that we can use that as imputed value for 
