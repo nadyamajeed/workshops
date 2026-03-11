@@ -1,3 +1,7 @@
+# NOTE THAT THIS CODE PLOTS THE RAW MEANS
+# NOT META-ANALYTIC WEIGHTED MEANS
+# PLEASE CONSIDER CODE AT https://github.com/nadyamajeed/workshops/blob/main/evisyn/annual_d_with_age_moderator.R
+
 library(dplyr)
 library(ggplot2)
 
