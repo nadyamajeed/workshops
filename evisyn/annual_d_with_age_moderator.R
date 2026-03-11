@@ -97,14 +97,16 @@ results2 = metafor::rma(
 )
 
 # plot effect against age
-plothelp_agerange = seq(
-  min(fakeStudies_processed$age_t1), 
-  max(fakeStudies_processed$age_t1), 
-  length.out = 100)
-plothelp_preds = predict(results2, newmods = plothelp_agerange)
-plothelp_data = data.frame(
-  age_t1 = plothelp_agerange,
-  d.annual_pred = plothelp_preds$pred)
+plothelp_data = 
+  # create some age values
+  data.frame(age_t1 = seq(
+    min(fakeStudies_processed$age_t1), 
+    max(fakeStudies_processed$age_t1), 
+    length.out = 100)) %>%
+  # get the predicted d values
+  dplyr::mutate(
+    d.annual_pred = predict(results2, newmods = age_t1)$pred)
+# make the actual plot
 ggplot() +
   # Bubble plot: points sized by inverse variance (weight)
   geom_point(data = fakeStudies_processed, 
