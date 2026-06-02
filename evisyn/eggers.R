@@ -157,9 +157,6 @@ metafor::rma.mv(
   # but the test statistic and hence p-value are not
   summary()
 
-# metafor::rma.mv does not have a weights argument.
-# metafor::regtest does not support rma.mv objects.
-# thus for three (or more) level meta,
-# lmerTest::lmer can/should be used instead.
+# note that metafor::regtest does not support rma.mv objects.
 
 ##### END OF CODE #####
