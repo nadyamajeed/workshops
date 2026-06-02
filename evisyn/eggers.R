@@ -1,17 +1,17 @@
 ##### START OF CODE #####
 
-# R version 4.3.1
+# R version 4.5.0
 
 # uncomment and run the following lines if packages are not already installed:
-# install.packages("metafor")
-# install.packages("lmerTest")
+# install.packages("metafor")  # version 5.0-1
+# install.packages("lmerTest") # version 3.2-1
 
 ##### READ IN AND CLEAN DATA #####
 
 # create SMDs (hedge's g)
 data_g_simple = metafor::escalc(
   # read in data
-  data = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/main/meta/data_simple_SMD.csv"),
+  data = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/refs/heads/main/evisyn/data/data_simple_SMD.csv"),
   # compute effect size and variance
   measure = "SMD", 
   n1i = n1, m1i = m1, sd1i = sd1,
@@ -53,9 +53,8 @@ metafor::rma(
   data = data_g_simple
 ) |>
   # put into regtest with model = "lm"
-  metafor::regtest(model = "lm") |>
   # see "Test for Funnel Plot Asymmetry" line in output
-  summary()
+  metafor::regtest(model = "lm")
 
 #> test via metafor (2) -----
 # corresponds to rearranged
@@ -70,6 +69,8 @@ metafor::rma(
   data = data_g_simple
 ) |>
   # estimate of interest is the slope
+  # note that the estimate is the same as previous two methods
+  # but the test statistic and hence p-value are not
   summary()
 
 ##### PUSTEJOVSKY-RODGERS ADJUSTMENT FOR SMD #####
@@ -106,6 +107,8 @@ metafor::rma(
   data = data_g_simple
 ) |>
   # estimate of interest is the slope
+  # note that the estimate is the same as previous method
+  # but the test statistic and hence p-value are not
   summary()
 
 ##### EXTENSION TO THREE-LEVEL META-ANALYSIS #####
@@ -113,7 +116,7 @@ metafor::rma(
 # create SMDs (hedge's g)
 data_g_multi = metafor::escalc(
   # read in data
-  data = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/main/meta/data_multi_SMD.csv"),
+  data = read.csv("https://raw.githubusercontent.com/nadyamajeed/workshops/refs/heads/main/evisyn/data/data_multi_SMD.csv"),
   # compute effect size and variance
   measure = "SMD", 
   n1i = n1, m1i = m1, sd1i = sd1,
@@ -138,7 +141,23 @@ lmerTest::lmer(
   # estimate of interest is the intercept
   summary(correlation = FALSE)
 
-# metafor::rma.mv does not have a weights argument
+#> test via metafor -----
+
+metafor::rma.mv(
+  # indicate g and variance
+  yi = yi, V = vi,
+  # indicate moderator which is SE
+  mods = ~ sei_corrected,
+  # indicate weight which is inverse SE^2
+  W = 1/sei_corrected^2,
+  data = data_g_multi
+) |>
+  # estimate of interest is the slope
+  # note that the estimate is the same as previous method
+  # but the test statistic and hence p-value are not
+  summary()
+
+# metafor::rma.mv does not have a weights argument.
 # metafor::regtest does not support rma.mv objects.
 # thus for three (or more) level meta,
 # lmerTest::lmer can/should be used instead.
