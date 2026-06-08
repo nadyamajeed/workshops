@@ -135,7 +135,9 @@ data_g_multi$sei_corrected = with(data_g_multi, sqrt((n1+n2)/(n1*n2)))
 lmerTest::lmer(
   # g weighted by SE is predicted by intercept and inverse SE
   # with random intercept by sample
-  I(yi/sei_corrected) ~ 1 + I(1/sei_corrected) + (1 | sample),
+  I(yi/sei_corrected) ~ 1 + I(1/sei_corrected) + 
+    # remember to include random effects structure
+    (1 | sample),
   data = data_g_multi
 ) |> 
   # estimate of interest is the intercept
@@ -146,10 +148,13 @@ lmerTest::lmer(
 metafor::rma.mv(
   # indicate g and variance
   yi = yi, V = vi,
+  # indicate random effects structure
+  random = ~ 1 | sample,
   # indicate moderator which is SE
   mods = ~ sei_corrected,
   # indicate weight which is inverse SE^2
   W = 1/sei_corrected^2,
+  # indicate data source
   data = data_g_multi
 ) |>
   # estimate of interest is the slope
