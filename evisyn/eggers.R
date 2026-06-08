@@ -155,7 +155,7 @@ metafor::rma.mv(
   # indicate weight which is inverse SE^2
   W = 1/sei_corrected^2,
   # indicate data source
-  data = data_g_multi
+  data = data_g_multi 
 ) |>
   # estimate of interest is the slope
   # note that the estimate is the same as previous method
@@ -163,5 +163,43 @@ metafor::rma.mv(
   summary()
 
 # note that metafor::regtest does not support rma.mv objects.
+
+#> illustration with unequal nest sizes -----
+
+# randomly make some nests  have missing data
+# so that some nests are smaller
+data_g_multi$yi[sample(1:90, 9)] = NA
+
+# lmerTest::lmer output
+lmerTest::lmer(
+  # g weighted by SE is predicted by intercept and inverse SE
+  # with random intercept by sample
+  I(yi/sei_corrected) ~ 1 + I(1/sei_corrected) + 
+    # remember to include random effects structure
+    (1 | sample),
+  data = data_g_multi
+) |> 
+  # estimate of interest is the intercept
+  summary(correlation = FALSE)
+
+# metafor::rma.mv output
+metafor::rma.mv(
+  # indicate g and variance
+  yi = yi, V = vi,
+  # indicate random effects structure
+  random = ~ 1 | sample,
+  # indicate moderator which is SE
+  mods = ~ sei_corrected,
+  # indicate weight which is inverse SE^2
+  W = 1/sei_corrected^2,
+  # indicate data source
+  data = data_g_multi 
+) |>
+  # estimate of interest is the slope
+  # note that the estimate is the same as previous method
+  # but the test statistic and hence p-value are not
+  summary()
+
+# note that estimates no longer match
 
 ##### END OF CODE #####
