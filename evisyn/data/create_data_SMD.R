@@ -54,7 +54,8 @@ set.seed(0)
 data_recorded_B = data_recorded_A
 
 # change the means slightly
-data_recorded_B$m1 = (data_recorded_B$m1 + rnorm(no_of_samples)) |> round(2)
+# while ensuring all Bs are slightly correlated with each other
+data_recorded_B$m1 = (data_recorded_B$m1 + rnorm(no_of_samples) + rnorm(no_of_samples, mean = 0.3, sd = 0.05)) |> round(2)
 data_recorded_B$m2 = (data_recorded_B$m2 + rnorm(no_of_samples)) |> round(2)
 
 # change the SDs slightly
@@ -69,7 +70,8 @@ data_recorded_B$sd2 = (data_recorded_B$sd2 + rnorm(no_of_samples, sd = 0.1)) |> 
 data_recorded_C = data_recorded_A
 
 # change the means slightly
-data_recorded_C$m1 = (data_recorded_C$m1 + rnorm(no_of_samples)) |> round(2)
+# while ensuring all Cs are slightly correlated with each other
+data_recorded_C$m1 = (data_recorded_C$m1 + rnorm(no_of_samples) + rnorm(no_of_samples, mean = -0.3, sd = 0.05)) |> round(2)
 data_recorded_C$m2 = (data_recorded_C$m2 + rnorm(no_of_samples)) |> round(2)
 
 # change the SDs slightly
