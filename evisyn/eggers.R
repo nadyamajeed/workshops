@@ -166,7 +166,7 @@ metafor::rma.mv(
 
 #> illustration with unequal nest sizes -----
 
-# randomly make some nests  have missing data
+# randomly make some nests have missing data
 # so that some nests are smaller
 data_g_multi$yi[sample(1:90, 9)] = NA
 
