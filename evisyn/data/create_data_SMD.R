@@ -1,6 +1,9 @@
+##### SET UP #####
+
+# R version 4.5.0
+
 ##### GENERATE DATA FOR SIMPLE (TWO-LEVEL) META-ANALYSIS OF SMD #####
 
-# R version 4.4.0
 set.seed(0)
 
 # set up some changeable parameters
@@ -41,6 +44,8 @@ data_recorded_A$m1 = with(data_recorded_A, ifelse(country == "B", m1 + 0.25, m1)
 
 ##### GENERATE DATA FOR THREE-LEVEL META-ANALYSIS OF SMD #####
 
+set.seed(0)
+
 # create second dataset
 # which is based on (i.e., correlated with) the first.
 # this will be our second effect size per sample.
@@ -56,13 +61,40 @@ data_recorded_B$m2 = (data_recorded_B$m2 + rnorm(no_of_samples)) |> round(2)
 data_recorded_B$sd1 = (data_recorded_B$sd1 + rnorm(no_of_samples, sd = 0.1)) |> round(2)
 data_recorded_B$sd2 = (data_recorded_B$sd2 + rnorm(no_of_samples, sd = 0.1)) |> round(2)
 
+# create third dataset
+# which is based on (i.e., correlated with) the first.
+# this will be our third effect size per sample.
+
+# duplicate the data
+data_recorded_C = data_recorded_A
+
+# change the means slightly
+data_recorded_C$m1 = (data_recorded_C$m1 + rnorm(no_of_samples)) |> round(2)
+data_recorded_C$m2 = (data_recorded_C$m2 + rnorm(no_of_samples)) |> round(2)
+
+# change the SDs slightly
+data_recorded_C$sd1 = (data_recorded_C$sd1 + rnorm(no_of_samples, sd = 0.1)) |> round(2)
+data_recorded_C$sd2 = (data_recorded_C$sd2 + rnorm(no_of_samples, sd = 0.1)) |> round(2)
+
+# indicate variables
+data_recorded_A$var = "A"
+data_recorded_B$var = "B"
+data_recorded_C$var = "C"
+
 # combine the data
-data_recorded_all = rbind(data_recorded_A, data_recorded_B)
+data_recorded_all = rbind(data_recorded_A, data_recorded_B, data_recorded_C)
 data_recorded_all = data_recorded_all[order(data_recorded_all$sample), ]
 
 ##### WRITE BOTH DATASETS #####
 
-write.csv(data_recorded_A,  "data_simple_SMD.csv", row.names = FALSE)
-write.csv(data_recorded_all, "data_multi_SMD.csv", row.names = FALSE)
+write.csv(
+  data_recorded_A |> subset(select = -var),  
+  "data_simple_SMD.csv", 
+  row.names = FALSE)
+
+write.csv(
+  data_recorded_all, 
+  "data_multi_SMD.csv", 
+  row.names = FALSE)
 
 ##### END OF CODE #####
